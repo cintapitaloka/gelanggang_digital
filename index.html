@@ -1,0 +1,2253 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Papan Skor Pencak Silat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>window.Peer||document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>')</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* Tema terang: putih, merah, biru, dengan aksen emas tipis. Laporan cetak tetap putih polos. */
+:root{
+  --bg:#f5f3ee; --panel:#ffffff; --panel2:#efece4; --line:#d8d3c6;
+  --fg:#16233d; --muted:#697287;
+  --red:#b3202f; --red-2:#b3202f; --blue:#1d4ea1; --blue-2:#1d4ea1;
+  --amber:#a98129; --navy:#16233d; --ok:#1d4ea1;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --f-disp:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --f-serif:'Playfair Display',Georgia,'Times New Roman',serif;
+  color-scheme:light;
+}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.disp{font-family:var(--f-disp)}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.eyebrow{font-size:13px;color:var(--muted);font-weight:600}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 56px}
+
+.field{width:100%;background:#fff;border:1px solid var(--line);color:var(--fg);border-radius:5px;padding:9px 11px;font:inherit;min-width:0}
+.field::placeholder{color:#a3a9b6}
+.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--fg);padding:9px 14px;font-weight:600;font-size:14px;transition:background .15s,border-color .15s,transform .05s}
+.btn:hover:not([disabled]){background:var(--panel2);border-color:#b9b2a0}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--amber);border-color:var(--amber);color:#fff}
+.btn-primary:hover:not([disabled]){background:#94701f;border-color:#94701f}
+.btn-ok{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-ok:hover:not([disabled]){background:#173f85;border-color:#173f85}
+.btn-danger{border-color:#e2b3b8;color:var(--red)}
+.btn-danger:hover:not([disabled]){background:#fbeced;border-color:var(--red)}
+.btn-armed{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
+
+.pill{display:inline-flex;align-items:center;gap:8px;border-radius:4px;padding:5px 12px;font-size:12px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line);background:#fff}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.pill.run{color:var(--blue);border-color:#a9bde3}
+.pill.run i{animation:pulse 1.2s infinite}
+.pill.pause{color:var(--amber);border-color:#dcc99a}
+.pill.end{color:var(--navy);border-color:#b4bccb}
+.pill.out{color:var(--red);border-color:#e2b3b8}
+.pill.idle{color:var(--muted)}
+@keyframes pulse{50%{opacity:.25}}
+
+/* sudut */
+.corner{border-radius:6px;border:1px solid var(--line);background:#fff;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.corner-red{--c:var(--red);--btn:var(--red);border-top:7px solid var(--red)}
+.corner-blue{--c:var(--blue);--btn:var(--blue);border-top:7px solid var(--blue)}
+.corner .tag{color:var(--c)}
+.cname{font-family:var(--f-disp);font-weight:700;font-size:clamp(24px,3vw,34px);line-height:1.05;overflow-wrap:anywhere}
+.big{font-family:var(--f-disp);font-weight:800;font-size:clamp(96px,13vw,176px);line-height:.88;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--c)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:flex;gap:8px;align-items:baseline;border:1px solid var(--line);background:#faf8f4;border-radius:4px;padding:5px 10px;font-size:13px;color:var(--muted)}
+.chip b{font-family:var(--f-disp);font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
+.chip.on{border-color:var(--amber);background:#fbf5e6}
+.chip.on span{color:var(--amber)}
+.badges{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+.badge{font-size:12px;font-weight:700;border-radius:3px;padding:2px 8px;background:#f7efdc;color:#7a5a14;border:1px solid #dcc99a}
+.badge.dq{background:#fbe5e7;color:var(--red);border-color:#e2b3b8}
+.atk{border:0;border-radius:6px;min-height:118px;padding:8px 4px 10px;color:#fff;background:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:filter .15s,transform .05s}
+.atk:hover:not([disabled]){filter:brightness(1.1)}
+.atk:active:not([disabled]){transform:scale(.98)}
+.atk[disabled]{opacity:.35;cursor:not-allowed}
+.atk .ico{width:100%;max-width:60px;height:auto;display:block;margin-bottom:4px}
+.atk .n{font-family:var(--f-disp);font-weight:800;font-size:28px;line-height:1}
+.atk .l{font-size:13px;font-weight:600;opacity:.95}
+.pen{border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:5px;min-height:52px;padding:6px 8px;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+.pen small{color:var(--muted);font-weight:500}
+.pen:hover:not([disabled]){border-color:#a9a28f;background:#faf8f4}
+.pen.used{border-color:var(--amber);color:#7a5a14;background:#fbf5e6}
+.pen[disabled]{opacity:.4;cursor:not-allowed}
+.pen.dq{border-color:#e2b3b8;color:var(--red)}
+
+/* tengah */
+.timer{font-family:var(--f-disp);font-weight:700;font-size:clamp(76px,9vw,120px);line-height:1;font-variant-numeric:tabular-nums;text-align:center;letter-spacing:.01em;color:var(--navy)}
+.timer.out{color:var(--red);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.bar{height:5px;border-radius:99px;background:#e7e2d6;overflow:hidden}
+.bar>div{height:100%;background:var(--amber);width:100%}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tab{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:5px;padding:9px 0;font-family:var(--f-disp);font-weight:700;font-size:20px;letter-spacing:.04em}
+.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab.next{border-color:var(--amber);color:var(--amber);animation:blink 1s steps(2) infinite}
+.winbox{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:#faf8f4}
+.winner{font-family:var(--f-disp);font-weight:800;font-size:28px;line-height:1.1;overflow-wrap:anywhere}
+.winner.red{color:var(--red)} .winner.blue{color:var(--blue)}
+
+/* tabel & log */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl th{font-size:12px;color:var(--muted);font-weight:600}
+.tbl td:first-child,.tbl th:first-child{text-align:left}
+.tbl .r{color:var(--red)} .tbl .b{color:var(--blue)}
+.tbl tr.tot td{font-weight:700;font-size:16px;border-bottom:0;background:#faf8f4}
+.tbl .split{border-left:1px solid var(--line)}
+.scroll-x{overflow-x:auto}
+.log{list-style:none;margin:0;padding:0;max-height:340px;overflow:auto}
+.log li{display:grid;grid-template-columns:auto 56px 1fr auto;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.log .t{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.log .w{font-weight:700;font-size:12px;letter-spacing:.06em}
+.log .w.red{color:var(--red)} .log .w.blue{color:var(--blue)}
+.log button{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;padding:2px 8px;border-radius:6px}
+.log button:hover:not([disabled]){background:var(--panel2);color:var(--red)}
+
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;pointer-events:none;background:var(--navy);color:#fff;padding:10px 16px;border-radius:6px;font-weight:600;font-size:14px;transition:all .25s;z-index:100;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* modal pratinjau */
+#modal{position:fixed;inset:0;background:rgba(22,35,61,.62);z-index:60;display:none;flex-direction:column}
+#modal.open{display:flex}
+#modal .bar2{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:12px max(16px,env(safe-area-inset-left,0px));background:#fff;border-bottom:1px solid var(--line)}
+#modal .paper-wrap{flex:1;overflow:auto;padding:20px max(12px,env(safe-area-inset-left,0px))}
+#modal .paper{background:#fff;width:190mm;margin:0 auto;padding:0;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+
+/* header & event */
+#hdrEvent{font-family:var(--f-serif);font-weight:700;letter-spacing:0;color:var(--navy);cursor:text;border-bottom:1px dashed transparent;width:fit-content;max-width:100%}
+#hdrEvent:hover{border-bottom-color:var(--muted)}
+.evrow{display:flex;gap:8px}
+.evchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.evchip{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:#fff;font-size:13px;max-width:100%}
+.evchip button{background:none;border:0;color:var(--fg);padding:4px 9px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evchip button+button{border-left:1px solid var(--line);color:var(--muted);padding:4px 8px}
+.evchip button:hover{background:var(--panel2)}
+.evchip button+button:hover{color:var(--red)}
+
+/* ===== Laporan resmi (putih, hemat tinta) ===== */
+.rp{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;font-size:11px;line-height:1.35;padding:6mm 5mm;box-sizing:border-box}
+.rp *{box-sizing:border-box}
+.rp h1{font-size:16px;margin:0;letter-spacing:.06em;text-transform:uppercase;text-align:center}
+.rp .ev{font-size:13px;font-weight:700;text-align:center;margin-top:3px;text-transform:uppercase}
+.rp .head{border-bottom:3px double #000;padding-bottom:7px;margin-bottom:8px}
+.rp table{width:100%;border-collapse:collapse}
+.rp .meta td{padding:2px 4px;vertical-align:top}
+.rp .meta td.k{width:24%;color:#333}
+.rp .meta td.c{width:10px}
+.rp .grid{border:1px solid #000;margin-top:8px}
+.rp .grid th,.rp .grid td{border:1px solid #000;padding:3px 5px;text-align:center;font-size:10.5px}
+.rp .grid td.lab{text-align:left}
+.rp .grid th.red{background:#fde8ea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp .grid th.blue{background:#e4edff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp .grid tr.sub td{background:#f2f2f2;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp .grid tr.tot td{font-weight:800;font-size:12px;border-top:2px solid #000}
+.rp .tt{width:100%;margin-top:10px;border:2px solid #000}
+.rp .tt td{text-align:center;vertical-align:middle;padding:6px 8px}
+.rp .tt .sc{font-size:40px;font-weight:800;line-height:1}
+.rp .tt .nm{font-size:12px;font-weight:700;text-transform:uppercase}
+.rp .tt .ko{font-size:10px;color:#333}
+.rp .tt .cr{font-size:10px;font-weight:700;letter-spacing:.1em}
+.rp .win{margin-top:8px;border:3px solid #000;padding:9px 10px;text-align:center}
+.rp .win.prov{border-style:dashed}
+.rp .win .t1{font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.rp .win .t2{font-size:19px;font-weight:800;text-transform:uppercase;margin:3px 0}
+.rp .win .t3{font-size:12px;font-weight:700;text-transform:uppercase}
+.rp .win .t4{font-size:10.5px;color:#333;margin-top:2px}
+.rp h3{font-size:11px;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.06em}
+.rp .ev-list td,.rp .ev-list th{border:1px solid #999;padding:2px 5px;font-size:10px;text-align:left}
+.rp .ev-list th{background:#f2f2f2;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp .sign{margin-top:12px}
+.rp .sign td{width:25%;text-align:center;vertical-align:top;padding:0 4px;font-size:10px}
+.rp .sign .sp{height:52px}
+.rp .sign .ln{border-top:1px solid #000;padding-top:2px;font-weight:700;min-height:14px}
+.rp .foot{margin-top:8px;font-size:8.5px;color:#555;text-align:center}
+
+#printHost{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important;color:#000!important}
+  body>*:not(#printHost){display:none!important}
+  #printHost{display:block!important}
+  #printHost .rp{padding:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+
+/* ===== peran, juri, data atlet ===== */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+#roleScreen{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.role-wrap{width:100%;max-width:760px}
+.role-title{font-family:var(--f-serif);font-size:clamp(28px,5vw,40px);font-weight:700;color:var(--navy);margin:4px 0 6px;line-height:1.15}
+.role-grid{display:grid;gap:12px;margin-top:22px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.role-card{text-align:left;background:#fff;border:1px solid var(--line);border-top:6px solid var(--navy);border-radius:6px;padding:16px;color:var(--fg);display:flex;flex-direction:column;gap:6px;min-height:120px}
+.role-card.j{border-top-color:var(--amber)}
+.role-card b{font-family:var(--f-disp);font-size:30px;line-height:1;color:var(--navy)}
+.role-card span{font-size:13px;color:var(--muted)}
+.role-card:hover{background:#faf8f4;border-color:#b9b2a0}
+
+.pickbox{margin-top:16px;border:1px solid var(--line);border-radius:6px;padding:12px;background:#faf8f4}
+.pickhead{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-bottom:10px;font-size:14px}
+.pickgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+
+.da-body{border-top:1px solid var(--line);padding:16px}
+.da-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.da-tab{border:1px solid var(--line);background:#fff;border-radius:5px;padding:8px 14px;font-weight:700;font-size:14px;color:var(--fg);text-align:left;display:flex;flex-direction:column;gap:1px}
+.da-tab small{font-weight:500;color:var(--muted);font-size:12px}
+.da-tab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.da-tab.on small{color:#c9d0de}
+.da-cols{display:grid;gap:20px;grid-template-columns:1fr 1fr}
+@media(max-width:900px){.da-cols{grid-template-columns:1fr}}
+.da-sec{min-width:0}
+.da-h{font-family:var(--f-serif);font-size:18px;font-weight:700;color:var(--navy);margin:0 0 10px}
+.frm{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));align-items:end;margin-top:12px}
+.frm .span2{grid-column:span 2}
+.frm .btnrow{display:flex;gap:8px}
+.da-gen{margin-top:12px;border:1px dashed var(--line);border-radius:5px;padding:8px 12px}
+.da-gen summary{cursor:pointer;font-weight:600;font-size:14px}
+.tbl .act{white-space:nowrap}
+.tbl .act button{border:0;background:none;color:var(--muted);padding:2px 6px;font-size:13px;text-decoration:underline;cursor:pointer}
+.tbl .act button:hover{color:var(--red)}
+.tbl td.l{text-align:left}
+
+.jrow{display:grid;grid-template-columns:64px 78px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px;align-items:baseline}
+.jsum{margin-top:8px;font-weight:700}
+
+.jv{max-width:980px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 56px}
+.jhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.jtitle{font-family:var(--f-serif);font-weight:700;font-size:clamp(30px,6vw,44px);line-height:1.1;color:var(--navy)}
+.jinfo{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.jev{font-family:var(--f-serif);font-weight:700;font-size:18px;color:var(--navy)}
+.jtime{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.jtime .timer{font-size:clamp(52px,12vw,84px);text-align:left}
+.jgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+@media(max-width:640px){.jgrid{grid-template-columns:1fr}}
+.jc{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.jc-red{--c:var(--red);--btn:var(--red);border-top:7px solid var(--red)}
+.jc-blue{--c:var(--blue);--btn:var(--blue);border-top:7px solid var(--blue)}
+.jc .tag{color:var(--c)}
+.jbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jbtn{border:0;border-radius:6px;min-height:128px;background:var(--c);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;touch-action:manipulation;transition:transform .05s,filter .15s;-webkit-tap-highlight-color:transparent}
+.jbtn:active:not([disabled]),.jbtn.hit{transform:scale(.95);filter:brightness(1.2)}
+.jbtn[disabled]{opacity:.35;cursor:not-allowed}
+.jbtn .ico{width:100%;max-width:64px;height:auto;display:block;margin-bottom:4px}
+.jbtn .n{font-family:var(--f-disp);font-weight:800;font-size:28px;line-height:1}
+.jbtn .l{font-size:13px;font-weight:600}
+.jfeedbox{padding:14px 16px}
+.jfeedhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.chip2{font-size:11px;font-weight:700;border-radius:3px;padding:2px 8px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip2.sah{color:var(--blue);border-color:#a9bde3;background:#eef3fc}
+.chip2.tunggu{color:#7a5a14;border-color:#dcc99a;background:#f7efdc}
+.chip2.tidak{color:var(--red);border-color:#e2b3b8;background:#fbe5e7}
+.jsend{margin-top:12px;padding:12px 16px}
+.jsend summary{cursor:pointer;font-weight:600}
+.jsend p{margin:8px 0}
+
+/* ===== hasil juri, tampilan juri (identitas pertandingan) ===== */
+.jmatch{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.jpartai{background:var(--navy);color:#fff;border-radius:5px;padding:6px 14px;font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;font-size:16px;display:inline-flex;align-items:baseline;gap:8px}
+.jpartai b{font-size:38px;line-height:1;font-weight:800;letter-spacing:0}
+.jclub{font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.jclub b{color:var(--fg)}
+.jcount{font-size:13px;color:var(--muted);margin-bottom:6px}
+.jr-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.jr-actions{display:flex;flex-wrap:wrap;gap:8px}
+.jr-tabs{grid-template-columns:repeat(4,1fr);max-width:420px;margin-bottom:12px}
+.tbl tr.comb td{font-weight:700;background:#f4f1e8}
+.jr-log{margin-top:14px}
+.jr-log summary{cursor:pointer;font-weight:600;font-size:14px;margin-bottom:6px}
+.rp .pb{page-break-before:always;break-before:page}
+.rp table.grid{display:table}
+.rp .grid td.grp{font-weight:700;background:#f2f2f2;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ===== navigasi monitor juri, statistik juri ===== */
+.opnav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:6px;align-items:stretch}
+.navbtn{border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:5px;padding:7px 14px;display:flex;align-items:center;gap:9px;text-align:left;font-size:14px;line-height:1.2}
+.navbtn b{display:block;font-weight:700}
+.navbtn small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:1px}
+.navbtn:hover{background:var(--panel2)}
+.navbtn.on,.navgrp.on .navbtn{background:var(--navy);border-color:var(--navy);color:#fff}
+.navbtn.on small,.navgrp.on .navbtn small{color:#c9d0de}
+.navgrp{display:inline-flex}
+.navgrp .navbtn{border-radius:5px 0 0 5px;border-right:0}
+.navopen{border:1px solid var(--line);background:#fff;border-radius:0 5px 5px 0;padding:0 11px;color:var(--muted);font-size:16px}
+.navgrp.on .navopen{border-color:var(--navy)}
+.navopen:hover{background:var(--panel2);color:var(--navy)}
+.dot{width:9px;height:9px;border-radius:50%;background:#c9c4b6;display:inline-block;flex:none}
+.dot.live{background:#2e9b5e;box-shadow:0 0 0 3px rgba(46,155,94,.22);animation:pulse 1.4s infinite}
+.dot.data{background:var(--amber)}
+.mon-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.mon-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.jhd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.jbigwrap{text-align:right;flex:none}
+.jbig{font-family:var(--f-disp);font-weight:800;font-size:58px;line-height:.9;color:var(--c);font-variant-numeric:tabular-nums}
+.jbigwrap small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.jstat{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.jcnt{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.jcnt div{background:#faf8f4;border:1px solid var(--line);border-radius:5px;padding:6px 4px;text-align:center}
+.jcnt b{display:block;font-family:var(--f-disp);font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.jcnt span{font-size:11px;color:var(--muted)}
+.jsn-head{font-size:12px;font-weight:600;color:var(--muted)}
+.jsn{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sn{border:1px solid var(--line);border-radius:5px;padding:6px 4px;font-size:11.5px;font-weight:600;text-align:center;color:#a3a9b6;background:#fff;line-height:1.2}
+.sn.on{color:#7a5a14;background:#f7efdc;border-color:#dcc99a}
+.sn.on.p{color:var(--red);background:#fbe5e7;border-color:#e2b3b8}
+.sn.on.dq{color:#fff;background:var(--red);border-color:var(--red)}
+.jofficial{font-size:14px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.jofficial b{font-family:var(--f-disp);font-size:24px}
+.jofficial small{color:var(--muted);font-size:12px}
+
+/* ===== unggul per ronde ===== */
+.rl{width:100%;border-collapse:collapse;font-size:14px}
+.rl th{font-size:12px;color:var(--muted);font-weight:600;padding:4px 6px;text-align:center;border-bottom:1px solid var(--line)}
+.rl th small{display:block;font-weight:500;font-size:11px;max-width:84px;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rl th.r{color:var(--red)} .rl th.b{color:var(--blue)}
+.rl td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:middle}
+.rl td.rd{text-align:left;font-weight:700}
+.rl td.rd small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.rl .sc{font-family:var(--f-disp);font-size:26px;font-weight:700;line-height:1}
+.rl .sc.r{color:var(--red)} .rl .sc.b{color:var(--blue)} .rl .sc.n{color:#b9b2a0}
+.rl tr.cur td{background:#fbf5e6}
+.rl tr.tot td{font-weight:800;border-bottom:0;background:#faf8f4}
+.lead{display:inline-block;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+.lead.red{background:#fbe5e7;color:var(--red);border-color:#e2b3b8}
+.lead.blue{background:#eef3fc;color:var(--blue);border-color:#a9bde3}
+.lead.seri{background:#f7efdc;color:#7a5a14;border-color:#dcc99a}
+.lead.none{color:var(--muted);background:#fff}
+.rlfoot{font-size:13px;display:flex;flex-direction:column;gap:2px}
+
+/* ===== rekap 3 ronde x 3 juri ===== */
+.rk{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+.rk th{font-size:12px;color:var(--muted);font-weight:600;padding:5px 6px;text-align:center;border-bottom:1px solid var(--line)}
+.rk th.g{color:var(--fg);font-size:13px;border-bottom:1px solid var(--line)}
+.rk th.r{color:var(--red)} .rk th.b{color:var(--blue)}
+.rk td{padding:7px 6px;text-align:center;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:middle}
+.rk td.rd{text-align:left;font-weight:700;white-space:nowrap}
+.rk td.rd small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.rk .split{border-left:2px solid var(--line)}
+.rk .v{font-family:var(--f-disp);font-size:22px;font-weight:700;line-height:1}
+.rk .v.z{color:#b9b2a0}
+.rk td.r .v:not(.z){color:var(--red)} .rk td.b .v:not(.z){color:var(--blue)}
+.rk td small.n{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+.rk td.fin{background:#faf8f4}
+.rk .v.neg{color:var(--red)}
+.rk tr.cur td{background:#fbf5e6}
+.rk tr.cur td.fin{background:#f7efdc}
+.rk tr.tot td{font-weight:800;border-bottom:0;background:#f4f1e8}
+.rk tr.tot .v{font-size:26px}
+
+/* ===== ringkasan jumlah poin di papan skor ===== */
+.sumbig{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
+.sumbig .n{font-family:var(--f-disp);font-weight:800;font-size:64px;line-height:.9;font-variant-numeric:tabular-nums}
+.sumbig .n.r{color:var(--red)} .sumbig .n.b{color:var(--blue)}
+.sumbig small{display:block;font-size:12px;font-weight:700;margin-bottom:2px}
+.sumbig .sep{font-family:var(--f-disp);font-size:32px;color:var(--muted)}
+.leadbar{border-radius:5px;padding:8px 10px;text-align:center;font-family:var(--f-disp);font-weight:800;font-size:24px;letter-spacing:.04em;border:1px solid var(--line)}
+.leadbar.red{background:#fbe5e7;color:var(--red);border-color:#e2b3b8}
+.leadbar.blue{background:#eef3fc;color:var(--blue);border-color:#a9bde3}
+.leadbar.seri{background:#f7efdc;color:#7a5a14;border-color:#dcc99a}
+.leadbar.none{background:#fff;color:var(--muted);font-size:16px;font-weight:600}
+.sumt{width:100%;border-collapse:collapse;font-size:13px}
+.sumt th{font-size:12px;font-weight:600;padding:3px 6px;text-align:center;color:var(--muted)}
+.sumt td{padding:4px 6px;text-align:center;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.sumt td:first-child,.sumt th:first-child{text-align:left}
+.sumt td.r{color:var(--red)} .sumt td.b{color:var(--blue)}
+.sumt tr.cur td{background:#fbf5e6}
+.sumt tr.tot td{font-weight:800;font-size:15px;background:#f4f1e8}
+.sumt tr.hd td{border-top:0;font-size:11px;font-weight:700;color:var(--muted);background:#faf8f4}
+.badge.lead{background:#e8f1ff;color:var(--blue);border-color:#a9bde3}
+.badge.lead.red{background:#fbe5e7;color:var(--red);border-color:#e2b3b8}
+
+.rbars{display:flex;flex-direction:column;gap:6px}
+.leadbar.rb{font-size:19px;padding:7px 10px}
+.leadbar.rb.cur{box-shadow:0 0 0 2px var(--amber)}
+.leadbar.acc{font-size:24px}
+.navtot{display:flex;align-items:center;gap:8px;margin-left:auto;border:1px solid var(--line);border-radius:5px;padding:6px 12px;font-weight:700;font-size:14px;background:#faf8f4}
+.navtot b{font-family:var(--f-disp);font-size:22px}
+.navtot.red{background:#fbe5e7;border-color:#e2b3b8;color:var(--red)}
+.navtot.blue{background:#eef3fc;border-color:#a9bde3;color:var(--blue)}
+.navtot.seri{background:#f7efdc;border-color:#dcc99a;color:#7a5a14}
+
+.jtot{border:1px solid var(--line);border-radius:6px;background:#faf8f4;padding:12px;display:flex;flex-direction:column;gap:10px}
+.jtot-h{font-size:13px;font-weight:700;color:var(--muted)}
+.jtot-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jtot-row div{background:#fff;border:1px solid var(--line);border-radius:5px;padding:6px 4px;text-align:center}
+.jtot-row span{display:block;font-size:12px;color:var(--muted)}
+.jtot-row b{font-family:var(--f-disp);font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--c)}
+.jtot-sum{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--c);color:#fff;border-radius:5px;padding:8px 12px;font-weight:700}
+.jtot-sum b{font-family:var(--f-disp);font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.jtot-sub{font-size:13px;color:var(--muted)}
+.jtot-sub b{color:var(--fg);font-size:15px}
+
+.room{border:1px solid var(--line);border-radius:6px;background:#faf8f4;padding:12px;display:flex;flex-direction:column;gap:8px}
+.room-code{font-family:var(--f-disp);font-weight:800;font-size:44px;letter-spacing:.14em;line-height:1;color:var(--navy)}
+.room-j{display:flex;gap:6px;flex-wrap:wrap}
+.room-j span{border:1px solid var(--line);background:#fff;border-radius:4px;padding:3px 9px;font-size:12px;font-weight:700;color:var(--muted)}
+.room-j span.ok{color:#1f7a47;border-color:#9ccfb2;background:#eaf6ef}
+.netbar{font-size:13px;font-weight:600}
+.netbar.ok{color:#1f7a47}.netbar.bad{color:var(--red)}.netbar.mid{color:#7a5a14}
+#roomIn{text-transform:uppercase;letter-spacing:.2em;font-weight:700;text-align:center;max-width:220px}
+</style>
+</head>
+<body>
+
+<div class="gutter mx-auto" style="max-width:1440px" id="app">
+
+  <!-- Header -->
+  <header class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <div aria-hidden="true" class="flex h-11 w-11 shrink-0 overflow-hidden rounded-lg border" style="border-color:var(--line)">
+        <div class="w-1/3" style="background:var(--red)"></div><div class="w-1/3" style="background:#fff"></div><div class="w-1/3" style="background:var(--blue)"></div>
+      </div>
+      <div class="min-w-0">
+        <div class="eyebrow">Sistem Penilaian Pertandingan Pencak Silat</div>
+        <h1 class="disp text-2xl sm:text-3xl font-bold leading-tight m-0 truncate" id="hdrEvent" title="Klik untuk mengganti nama event">Kejuaraan</h1>
+        <div class="muted text-sm" id="hdrMeta"></div>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2" id="hdrActions"></div>
+  </header>
+
+  <nav class="opnav" id="opNav" aria-label="Navigasi monitor juri"></nav>
+  <div id="opMain">
+
+  <!-- Data pertandingan -->
+  <details id="setup" class="card mb-4">
+    <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 font-semibold" style="list-style:none">
+      <span>Data Pertandingan</span>
+      <span class="muted text-sm font-normal">Nama event, partai, pesilat, ketua pertandingan dan dewan juri</span>
+    </summary>
+    <div class="border-t px-4 py-4" style="border-color:var(--line)">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="sm:col-span-2"><label class="lbl" for="f-event">Nama Event / Kejuaraan</label>
+          <div class="evrow"><input class="field" id="f-event" data-k="info.event" placeholder="Ketik nama kejuaraan" autocomplete="off"><button type="button" class="btn" data-act="clearEvent" title="Kosongkan nama event" style="white-space:nowrap">Hapus</button></div>
+          <div class="evchips" id="evHist" aria-label="Event yang pernah dipakai"></div>
+        </div>
+        <div><label class="lbl" for="f-partai">Nomor Partai</label><input class="field" id="f-partai" data-k="info.partai" placeholder="27" inputmode="numeric"></div>
+        <div><label class="lbl" for="f-kelas">Kelas Tanding</label><input class="field" id="f-kelas" data-k="info.kelas" placeholder="Kelas A Putra"></div>
+        <div><label class="lbl" for="f-dt">Tanggal &amp; Waktu</label><input class="field" id="f-dt" type="datetime-local" data-k="info.datetime"></div>
+        <div><label class="lbl" for="f-ketua">Ketua Pertandingan</label><input class="field" id="f-ketua" data-k="info.ketua" placeholder="Nama ketua pertandingan"></div>
+        <div class="sm:col-span-2"><label class="lbl" for="f-juri">Dewan Juri / Juri</label><input class="field" id="f-juri" data-k="info.juri" placeholder="Nama juri (pisahkan dengan koma)"></div>
+      </div>
+      <div class="pickbox">
+        <div class="pickhead"><b>Pilih dari Data Atlet</b><span class="muted">Isi atlet dan kelas di bagian &quot;Data Atlet &amp; Kelas Tanding&quot;, lalu pilih di sini.</span></div>
+        <div class="pickgrid">
+          <div><label class="lbl" for="p-cat">Kategori</label><select class="field" id="p-cat"></select></div>
+          <div><label class="lbl" for="p-kelas">Kelas Tanding</label><select class="field" id="p-kelas"></select></div>
+          <div><label class="lbl" for="p-red">Atlet Sudut Merah</label><select class="field" id="p-red"></select></div>
+          <div><label class="lbl" for="p-blue">Atlet Sudut Biru</label><select class="field" id="p-blue"></select></div>
+        </div>
+      </div>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <fieldset class="rounded-lg border p-3" style="border-color:#e2b3b8;background:#fdf5f6">
+          <legend class="px-1 text-sm font-bold" style="color:var(--red-2)">Sudut Merah</legend>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div><label class="lbl" for="f-rn">Nama Pesilat</label><input class="field" id="f-rn" data-k="red.name"></div>
+            <div><label class="lbl" for="f-rc">Kontingen</label><input class="field" id="f-rc" data-k="red.club"></div>
+            <div><label class="lbl" for="f-rm">Manajer / Pelatih</label><input class="field" id="f-rm" data-k="red.manager"></div>
+          </div>
+        </fieldset>
+        <fieldset class="rounded-lg border p-3" style="border-color:#b9c8e6;background:#f4f7fc">
+          <legend class="px-1 text-sm font-bold" style="color:var(--blue-2)">Sudut Biru</legend>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div><label class="lbl" for="f-bn">Nama Pesilat</label><input class="field" id="f-bn" data-k="blue.name"></div>
+            <div><label class="lbl" for="f-bc">Kontingen</label><input class="field" id="f-bc" data-k="blue.club"></div>
+            <div><label class="lbl" for="f-bm">Manajer / Pelatih</label><input class="field" id="f-bm" data-k="blue.manager"></div>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+  </details>
+
+  <!-- Data atlet & kelas tanding -->
+  <details id="dataAtlet" class="card mb-4">
+    <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 font-semibold" style="list-style:none">
+      <span>Data Atlet &amp; Kelas Tanding</span>
+      <span class="muted text-sm font-normal" id="daSum"></span>
+    </summary>
+    <div class="da-body">
+      <div class="da-tabs" id="daTabs"></div>
+      <div class="da-cols">
+        <section class="da-sec">
+          <h2 class="da-h">Kelas tanding · <span id="daCatName"></span></h2>
+          <div class="scroll-x" id="daKelas"></div>
+          <div class="frm">
+            <div><label class="lbl" for="k-name">Nama kelas</label><input class="field" id="k-name" placeholder="Kelas A" autocomplete="off"></div>
+            <div><label class="lbl" for="k-gender">Jenis</label><select class="field" id="k-gender"><option value="Putra">Putra</option><option value="Putri">Putri</option><option value="">Tanpa pembagian</option></select></div>
+            <div><label class="lbl" for="k-min">Berat min (kg)</label><input class="field num" id="k-min" type="number" min="0" step="0.5" inputmode="decimal"></div>
+            <div><label class="lbl" for="k-max">Berat maks (kg)</label><input class="field num" id="k-max" type="number" min="0" step="0.5" inputmode="decimal"></div>
+            <div class="btnrow"><button class="btn btn-primary" data-act="kAdd">Tambah kelas</button></div>
+          </div>
+          <details class="da-gen">
+            <summary>Buat kelas berurutan sekaligus</summary>
+            <div class="frm">
+              <div><label class="lbl" for="g-min">Mulai (kg)</label><input class="field num" id="g-min" type="number" min="0" step="0.5" value="45" inputmode="decimal"></div>
+              <div><label class="lbl" for="g-max">Sampai (kg)</label><input class="field num" id="g-max" type="number" min="0" step="0.5" value="95" inputmode="decimal"></div>
+              <div><label class="lbl" for="g-step">Selisih (kg)</label><input class="field num" id="g-step" type="number" min="0.5" step="0.5" value="5" inputmode="decimal"></div>
+              <div><label class="lbl" for="g-gender">Jenis</label><select class="field" id="g-gender"><option value="Putra">Putra</option><option value="Putri">Putri</option><option value="both">Putra &amp; Putri</option><option value="">Tanpa pembagian</option></select></div>
+              <div class="btnrow"><button class="btn" data-act="kGen">Buat kelas</button></div>
+            </div>
+            <p class="muted text-xs" style="margin:8px 0 0">Contoh: 45 sampai 95 dengan selisih 5 kg menjadi Kelas A (45–50 kg) sampai Kelas J (90–95 kg). Sesuaikan angkanya dengan petunjuk teknis event.</p>
+          </details>
+        </section>
+        <section class="da-sec">
+          <h2 class="da-h">Data atlet · <span id="daCatName2"></span></h2>
+          <div class="frm" style="margin-top:0">
+            <div class="span2"><label class="lbl" for="a-name">Nama atlet</label><input class="field" id="a-name" autocomplete="off"></div>
+            <div><label class="lbl" for="a-club">Kontingen</label><input class="field" id="a-club" list="clubList" autocomplete="off"></div>
+            <div><label class="lbl" for="a-coach">Pelatih / manajer</label><input class="field" id="a-coach" autocomplete="off"></div>
+            <div><label class="lbl" for="a-cat">Kategori</label><select class="field" id="a-cat"></select></div>
+            <div><label class="lbl" for="a-kelas">Kelas tanding</label><select class="field" id="a-kelas"></select></div>
+            <div><label class="lbl" for="a-weight">Berat badan (kg)</label><input class="field num" id="a-weight" type="number" min="0" step="0.1" inputmode="decimal"></div>
+            <div class="btnrow"><button class="btn btn-primary" data-act="aSave" id="aSaveBtn">Simpan atlet</button><button class="btn" data-act="aCancel" id="aCancelBtn" hidden>Batal</button></div>
+          </div>
+          <datalist id="clubList"></datalist>
+          <div style="margin-top:14px"><label class="lbl" for="a-q">Cari atlet</label><input class="field" id="a-q" placeholder="Nama atau kontingen" autocomplete="off"></div>
+          <div class="scroll-x" id="daAtlet" style="margin-top:8px"></div>
+        </section>
+      </div>
+    </div>
+  </details>
+
+  <!-- Live scoreboard -->
+  <main class="grid gap-4 lg:grid-cols-[1fr_minmax(300px,380px)_1fr]">
+    <div id="panelRed" class="order-2 lg:order-1 min-w-0"></div>
+
+    <section class="order-1 lg:order-2 flex flex-col gap-4 min-w-0">
+      <div class="card p-4 flex flex-col gap-3">
+        <div class="tabs" id="roundTabs"></div>
+        <div class="timer" id="timerText">03:00</div>
+        <div class="bar" aria-hidden="true"><div id="timerBar"></div></div>
+        <div class="muted text-center text-sm" id="timerNote">&nbsp;</div>
+        <div class="grid grid-cols-[1fr_auto] gap-2">
+          <button class="btn btn-ok" id="btnPlay" data-act="play" style="min-height:52px;font-size:17px"></button>
+          <button class="btn" data-act="reset" style="min-height:52px" title="Reset waktu ronde ini">Reset</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 border-t pt-3" style="border-color:var(--line)">
+          <div><label class="lbl" for="durMin">Menit / ronde</label><input class="field num" id="durMin" type="number" min="0" max="20" value="3" inputmode="numeric"></div>
+          <div><label class="lbl" for="durSec">Detik</label><input class="field num" id="durSec" type="number" min="0" max="59" value="0" inputmode="numeric"></div>
+          <div><label class="lbl" for="techDiff" title="0 = nonaktif">Selisih teknik</label><input class="field num" id="techDiff" type="number" min="0" max="99" value="10" inputmode="numeric"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div><label class="lbl">Poin serangan dari</label><div class="field" style="background:var(--panel2)">3 Juri</div></div>
+          <div><label class="lbl">Perhitungan juri</label><div class="field" style="background:var(--panel2)">Jumlah 3 juri</div></div>
+          <div><label class="lbl" for="jWin" title="Rentang waktu antar tekan juri">Jendela (detik)</label><input class="field num" id="jWin" type="number" min="1" max="10" value="3" inputmode="numeric"></div>
+        </div>
+      </div>
+
+      <div class="card p-4 flex flex-col gap-3" id="sumCard"></div>
+
+      <div class="card p-4 flex flex-col gap-3" id="roundLead"></div>
+
+      <div class="card p-4 flex flex-col gap-3">
+        <div class="eyebrow">Hasil Pertandingan</div>
+        <div id="resultCard"></div>
+        <div id="specialBox"></div>
+        <div id="finishBox"></div>
+      </div>
+
+      <div class="card p-4 flex flex-col gap-3" id="juriBox" hidden>
+        <div class="eyebrow">Penilaian Juri</div>
+        <div class="room" id="roomBox"></div>
+        <div id="jStat"></div>
+        <div class="grid grid-cols-3 gap-2">
+          <button class="btn" data-act="openJ" data-n="1">Buka Juri 1</button>
+          <button class="btn" data-act="openJ" data-n="2">Buka Juri 2</button>
+          <button class="btn" data-act="openJ" data-n="3">Buka Juri 3</button>
+        </div>
+        <p class="muted text-xs" style="margin:0">Setiap juri membuka tab sendiri dan memilih nomor juri. Pada komputer yang sama nilai masuk otomatis. Untuk perangkat lain, salin kode dari halaman juri, lalu tempel di bawah.</p>
+        <details>
+          <summary style="cursor:pointer;font-weight:600;font-size:14px">Perangkat juri terpisah</summary>
+          <label class="lbl" for="mCode" style="margin-top:10px">1. Kode pertandingan (kirim ke juri)</label>
+          <textarea class="field" id="mCode" rows="2" readonly></textarea>
+          <button class="btn" data-act="mcopy" style="margin-top:8px">Salin kode pertandingan</button>
+          <label class="lbl" for="jImport" style="margin-top:14px">2. Impor kode nilai dari juri</label>
+          <textarea class="field" id="jImport" rows="2" placeholder="SILAT-J1:..."></textarea>
+          <button class="btn" data-act="jimport" style="margin-top:8px">Impor kode nilai</button>
+        </details>
+        <button class="btn btn-danger" data-act="jclear" id="jClearBtn">Kosongkan input juri</button>
+      </div>
+    </section>
+
+    <div id="panelBlue" class="order-3 min-w-0"></div>
+  </main>
+
+  <!-- Rekap 3 ronde x 3 juri -->
+  <section class="card mt-4 p-4 min-w-0" id="rekap3">
+    <div class="jr-head">
+      <div>
+        <div class="eyebrow">Rekap Skor 3 Ronde &times; 3 Juri</div>
+        <div class="muted text-sm" id="rekapNote"></div>
+      </div>
+      <div id="rekapWin"></div>
+    </div>
+    <div class="scroll-x" id="rekapTable"></div>
+  </section>
+
+  <!-- Hasil penilaian juri -->
+  <section class="card mt-4 p-4 min-w-0" id="juriResult" hidden>
+    <div class="jr-head">
+      <div>
+        <div class="eyebrow">Hasil Penilaian Juri</div>
+        <div class="muted text-sm">Nilai Juri 1, 2, dan 3, serta gabungan poin sah. Diperbarui langsung saat juri menekan tombol.</div>
+      </div>
+      <div class="jr-actions">
+        <button class="btn" data-act="preview" data-kind="juri">Pratinjau Rekap</button>
+        <button class="btn" data-act="csv">Unduh Log (CSV)</button>
+        <button class="btn btn-primary" data-act="pdf" data-kind="juri">Unduh Rekap Juri (PDF)</button>
+      </div>
+    </div>
+    <div class="tabs jr-tabs" id="jrTabs"></div>
+    <div class="scroll-x" id="jrTable"></div>
+    <details class="jr-log" open>
+      <summary>Log input semua juri</summary>
+      <ul class="log" id="jrLog"></ul>
+    </details>
+  </section>
+
+  <!-- Rincian & riwayat -->
+  <section class="mt-4 grid gap-4 lg:grid-cols-2">
+    <div class="card p-4 min-w-0">
+      <div class="eyebrow mb-2">Rincian Skor per Ronde</div>
+      <div class="scroll-x" id="breakdown"></div>
+    </div>
+    <div class="card p-4 min-w-0">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <div class="eyebrow">Riwayat Kejadian</div>
+        <button class="btn" data-act="undo" id="btnUndo" style="padding:5px 10px;font-size:13px">Batalkan aksi terakhir</button>
+      </div>
+      <ul class="log" id="logList"></ul>
+    </div>
+  </section>
+
+  <!-- Laporan -->
+  <section class="card mt-4 p-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="min-w-0">
+      <div class="font-semibold">Berita Acara Pertandingan</div>
+      <div class="muted text-sm">Dokumen A4 berlatar putih, memuat rincian ronde, skor akhir, pemenang dan kolom tanda tangan.</div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn" data-act="preview" data-kind="ba">Pratinjau</button>
+      <button class="btn" data-act="print" data-kind="ba">Cetak Hasil Pertandingan</button>
+      <button class="btn btn-primary" data-act="pdf" data-kind="ba">Download PDF</button>
+    </div>
+  </section>
+
+  </div>
+  <div id="monitor" hidden></div>
+
+  <p class="muted mt-4 text-center text-xs">Pintasan: tekan Spasi untuk memulai atau menjeda timer. Data tersimpan otomatis di peramban ini.</p>
+</div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-label="Pratinjau Berita Acara">
+  <div class="bar2">
+    <strong id="modalTitle">Pratinjau Berita Acara Pertandingan</strong>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn" data-act="print">Cetak</button>
+      <button class="btn btn-primary" data-act="pdf">Download PDF</button>
+      <button class="btn" data-act="closeModal">Tutup</button>
+    </div>
+  </div>
+  <div class="paper-wrap"><div class="paper" id="paper"></div></div>
+</div>
+
+<div id="roleScreen" hidden>
+  <div class="role-wrap">
+    <div class="eyebrow">Sistem Penilaian Pertandingan Pencak Silat</div>
+    <h1 class="role-title">Masuk sebagai siapa?</h1>
+    <p class="muted" style="margin:0">Pilih peran untuk tab atau perangkat ini. Setiap juri memilih nomor juri masing-masing.</p>
+    <div style="margin-top:16px"><label class="lbl" for="roomIn">Kode ruang (khusus juri, minta dari operator)</label><input class="field" id="roomIn" maxlength="8" placeholder="mis. K7M2P" autocomplete="off"><div class="muted text-xs" style="margin-top:4px">Isi kode agar timer, nama atlet, dan kelas mengikuti operator di perangkat lain. Kosongkan untuk mode satu komputer.</div></div>
+    <div class="role-grid">
+      <button class="role-card" data-act="setRole" data-r="op"><b>Operator</b><span>Ketua pertandingan: timer, sanksi, data atlet, hasil dan Berita Acara.</span></button>
+      <button class="role-card j" data-act="setRole" data-r="1"><b>Juri 1</b><span>Memberi nilai pukulan, tendangan dan jatuhan.</span></button>
+      <button class="role-card j" data-act="setRole" data-r="2"><b>Juri 2</b><span>Memberi nilai pukulan, tendangan dan jatuhan.</span></button>
+      <button class="role-card j" data-act="setRole" data-r="3"><b>Juri 3</b><span>Memberi nilai pukulan, tendangan dan jatuhan.</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="judgeApp" hidden></div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="printHost"></div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = (s, r = document) => r.querySelector(s);
+const KEY = 'silat-scoring-v1';
+
+const TYPES = {
+  punch:   { label: 'Pukulan',        pts: 1,   kind: 'atk' },
+  kick:    { label: 'Tendangan',      pts: 2,   kind: 'atk' },
+  takedown:{ label: 'Jatuhan',        pts: 3,   kind: 'atk' },
+  binaan:  { label: 'Binaan',         pts: 0,   kind: 'pen' },
+  t1:      { label: 'Teguran 1',      pts: -1,  kind: 'pen', short: 'T1' },
+  t2:      { label: 'Teguran 2',      pts: -2,  kind: 'pen', short: 'T2' },
+  p1:      { label: 'Peringatan 1',   pts: -5,  kind: 'pen', short: 'P1' },
+  p2:      { label: 'Peringatan 2',   pts: -10, kind: 'pen', short: 'P2' },
+  dq:      { label: 'Diskualifikasi', pts: 0,   kind: 'pen', short: 'DQ' }
+};
+
+/* ---------- ilustrasi teknik (SVG) ---------- */
+const W = 'fill="#fff"';
+const ICONS = {
+  /* tangan mengepal, tampak depan */
+  punch: `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">
+    <g fill="#fff" stroke="var(--btn)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+      <rect x="21" y="48" width="23" height="12" rx="3"/>
+      <rect x="11" y="28" width="44" height="26" rx="9"/>
+      <rect x="11" y="12" width="10" height="26" rx="5"/>
+      <rect x="22" y="9" width="10" height="29" rx="5"/>
+      <rect x="33" y="9" width="10" height="29" rx="5"/>
+      <rect x="44" y="12" width="10" height="26" rx="5"/>
+      <path d="M13 42 Q26 36 40 44 Q30 52 17 49 Q10 47 13 42 Z" fill="#fff"/>
+    </g>
+    <g stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".8"><path d="M32 2 V5"/><path d="M15 5 L17 8"/><path d="M49 5 L47 8"/></g>
+  </svg>`,
+  /* kaki menendang */
+  kick: `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 56 L25 43 L41 30" stroke-width="11"/>
+      <path d="M41 30 L56 21" stroke-width="9"/>
+      <path d="M56 21 L58 13" stroke-width="7"/>
+    </g>
+    <circle cx="25" cy="43" r="2.2" fill="var(--btn)"/>
+    <g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".6"><path d="M6 34 Q14 22 28 16" stroke-dasharray="3 4"/><path d="M62 6 L63 2"/><path d="M52 8 L50 4"/></g>
+  </svg>`,
+  /* bantingan: tubuh terbanting ke matras */
+  takedown: `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M4 57 H60" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+    <circle cx="14" cy="44" r="6" fill="#fff"/>
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 46 L42 42" stroke-width="10"/>
+      <path d="M42 42 L56 30" stroke-width="7"/>
+      <path d="M42 42 L58 47" stroke-width="7"/>
+      <path d="M26 42 L31 31" stroke-width="5"/>
+    </g>
+    <g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".6"><path d="M14 24 Q34 6 52 16" stroke-dasharray="3 4"/><path d="M52 16 L45 14 M52 16 L49 23"/></g>
+  </svg>`
+};
+const CORNER = {
+  red:  { label: 'Sudut Merah', short: 'MERAH', other: 'blue', fallback: 'Pesilat Merah' },
+  blue: { label: 'Sudut Biru',  short: 'BIRU',  other: 'red',  fallback: 'Pesilat Biru' }
+};
+
+const pad = n => String(n).padStart(2, '0');
+function nowLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function freshState() {
+  return {
+    info: { event: 'Kejuaraan Pencak Silat Mahasiswa 2026', partai: '1', kelas: 'Kelas A Putra', kategori: '', kelasId: '', datetime: nowLocal(), ketua: '', juri: '' },
+    red:  { name: 'Pesilat Sudut Merah', club: 'Kontingen A', manager: '', atletId: '' },
+    blue: { name: 'Pesilat Sudut Biru',  club: 'Kontingen B', manager: '', atletId: '' },
+    settings: { roundSec: 180, techDiff: 10, mode: 'juri', jWindow: 3, jQuorum: 1 },
+    round: 1,
+    remaining: [180000, 180000, 180000],
+    events: [], seq: 0,
+    special: null, tie: null, finished: false, fresh: true
+  };
+}
+function load() {
+  const base = freshState();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const o = JSON.parse(raw);
+      const s = Object.assign(base, o);
+      s.info = Object.assign(base.info, o.info);
+      s.red = Object.assign(freshState().red, o.red);
+      s.blue = Object.assign(freshState().blue, o.blue);
+      s.settings = Object.assign(freshState().settings, o.settings);
+      if (!Array.isArray(s.remaining) || s.remaining.length !== 3) s.remaining = [s.settings.roundSec * 1000, s.settings.roundSec * 1000, s.settings.roundSec * 1000];
+      s.settings.mode = 'juri'; s.settings.jQuorum = 1;
+      s.fresh = false;
+      return s;
+    }
+  } catch (e) {}
+  return base;
+}
+let S = load();
+S.running = false;
+let armed = null, spType = 'mutlak';
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nameOf = c => (S[c].name || '').trim() || CORNER[c].fallback;
+const clubOf = c => (S[c].club || '').trim();
+const signed = n => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '0');
+function fmt(ms) {
+  const s = Math.ceil(ms / 1000);
+  return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+}
+function fmtDate(v) {
+  try {
+    const d = new Date(v);
+    if (isNaN(d)) return v || '-';
+    return d.toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return v || '-'; }
+}
+
+
+/* ---------- daftar event tersimpan ---------- */
+const HKEY = 'silat-event-history';
+let hist = [];
+try { const h = JSON.parse(localStorage.getItem(HKEY)); if (Array.isArray(h)) hist = h.filter(x => typeof x === 'string'); } catch (e) {}
+function saveHist() { try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) {} }
+function pushHist(name) {
+  name = (name || '').trim(); if (!name) return;
+  hist = [name, ...hist.filter(h => h !== name)].slice(0, 8);
+  saveHist(); renderHist();
+}
+function renderHist() {
+  $('#evHist').innerHTML = hist.map((h, i) =>
+    `<span class="evchip"><button type="button" data-act="useEvent" data-i="${i}" title="Pakai nama ini">${esc(h)}</button><button type="button" data-act="delEvent" data-i="${i}" aria-label="Hapus dari daftar" title="Hapus dari daftar">×</button></span>`).join('');
+}
+function setEventName(v) {
+  S.info.event = v; $('#f-event').value = v;
+  save(); renderAll();
+}
+
+/* ---------- toast & beep ---------- */
+let toastT;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.28, 0.56].forEach(d => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.25, ac.currentTime + d);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d + 0.22);
+      o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.24);
+    });
+  } catch (e) {}
+}
+
+/* ---------- logika skor ---------- */
+function stats(c) {
+  const rounds = [1, 2, 3].map(() => ({ punch: 0, kick: 0, takedown: 0, binaan: 0, pen: [], atk: 0, ded: 0, total: 0 }));
+  for (const e of S.events) {
+    if (e.corner !== c) continue;
+    const R = rounds[e.round - 1], T = TYPES[e.type];
+    if (T.kind === 'atk') { if (S.settings.mode === 'juri') continue; R[e.type]++; R.atk += T.pts; }
+    else if (e.type === 'binaan') R.binaan++;
+    else { R.pen.push(e.type); R.ded += T.pts; }
+  }
+  if (S.settings.mode === 'juri') jeval(S.settings).points.forEach(p => {
+    if (p.corner !== c) return;
+    const R = rounds[p.round - 1]; R[p.type]++; R.atk += TYPES[p.type].pts;
+  });
+  rounds.forEach(R => { R.total = R.atk + R.ded; });
+  return { rounds, total: rounds.reduce((a, R) => a + R.total, 0), dq: S.events.some(e => e.corner === c && e.type === 'dq') };
+}
+function result() {
+  const r = stats('red'), b = stats('blue');
+  const out = { winner: null, label: '', detail: '', tied: false, empty: S.events.length === 0 && !S.special && !(S.settings.mode === 'juri' && jeval(S.settings).points.length), red: r.total, blue: b.total };
+  if (r.dq || b.dq) {
+    const loser = r.dq ? 'red' : 'blue';
+    return Object.assign(out, { winner: CORNER[loser].other, label: 'Menang Diskualifikasi', detail: `${CORNER[loser].label} (${nameOf(loser)}) didiskualifikasi`, empty: false });
+  }
+  if (S.special) {
+    const w = S.special.winner, l = CORNER[w].other;
+    return Object.assign(out, S.special.type === 'mutlak'
+      ? { winner: w, label: 'Menang Mutlak', detail: `${CORNER[l].label} tidak dapat melanjutkan pertandingan`, empty: false }
+      : { winner: w, label: 'Menang Teknik', detail: `${CORNER[l].label} mengundurkan diri / pertandingan dihentikan wasit`, empty: false });
+  }
+  const diff = r.total - b.total, ad = Math.abs(diff), td = S.settings.techDiff;
+  if (diff === 0) {
+    if (S.tie) return Object.assign(out, { winner: S.tie, label: 'Menang Angka', detail: 'Skor seri, diputuskan oleh Dewan Juri' });
+    out.tied = !out.empty; return out;
+  }
+  const w = diff > 0 ? 'red' : 'blue';
+  if (td > 0 && ad >= td) return Object.assign(out, { winner: w, label: 'Menang Teknik', detail: `Selisih angka ${ad} (batas ${td})` });
+  return Object.assign(out, { winner: w, label: 'Menang Angka', detail: `Selisih angka ${ad}` });
+}
+
+/* ---------- aksi ---------- */
+function addEvent(corner, type) {
+  if (S.finished) return toast('Pertandingan sudah diakhiri. Buka kembali untuk mengubah skor.');
+  const T = TYPES[type];
+  if (T.kind === 'atk') return toast('Poin serangan hanya diisi oleh 3 juri.');
+  if (T.kind === 'pen' && type !== 'binaan' && S.events.some(e => e.corner === corner && e.type === type)) return;
+  S.events.push({ id: ++S.seq, round: S.round, corner, type, t: fmt(S.remaining[S.round - 1]), ts: Date.now() });
+  S.fresh = false;
+  if (type === 'dq') { pause(true); S.finished = true; toast(`${nameOf(corner)} didiskualifikasi. Pertandingan diakhiri.`); }
+  save(); renderAll();
+}
+function removeEvent(id) {
+  if (S.finished && !S.events.some(e => e.id === id && e.type === 'dq')) return toast('Buka kembali pertandingan untuk mengubah skor.');
+  const e = S.events.find(x => x.id === id);
+  S.events = S.events.filter(x => x.id !== id);
+  if (e && e.type === 'dq') S.finished = false;
+  save(); renderAll();
+}
+
+/* ---------- timer ---------- */
+let endAt = 0, iv = null;
+function play() {
+  if (S.finished) return toast('Pertandingan sudah diakhiri.');
+  const r = S.round - 1;
+  if (S.remaining[r] <= 0) return toast('Waktu ronde ini habis. Pilih ronde berikutnya atau tekan Reset.');
+  S.running = true; endAt = Date.now() + S.remaining[r]; S.endAt = endAt;
+  clearInterval(iv); iv = setInterval(tick, 100);
+  save(); renderAll();
+}
+function pause(silent) {
+  if (!S.running) return;
+  tick();
+  S.running = false; clearInterval(iv);
+  save(); if (!silent) renderAll();
+}
+function tick() {
+  if (!S.running) return;
+  const r = S.round - 1;
+  S.remaining[r] = Math.max(0, endAt - Date.now());
+  if (S.remaining[r] === 0) {
+    S.running = false; clearInterval(iv);
+    beep(); toast(`Waktu ronde ${S.round} habis`);
+    save(); renderAll(); return;
+  }
+  drawTimer();
+}
+function resetTimer() {
+  pause(true);
+  S.remaining[S.round - 1] = S.settings.roundSec * 1000;
+  save(); renderAll();
+}
+function goRound(n) {
+  if (n === S.round) return;
+  pause(true); S.round = n; save(); renderAll();
+}
+function drawTimer() {
+  const r = S.round - 1, ms = S.remaining[r], full = S.settings.roundSec * 1000;
+  const t = $('#timerText');
+  t.textContent = fmt(ms); const mt = $('#mTimer'); if (mt) mt.textContent = fmt(ms);
+  t.classList.toggle('out', ms === 0);
+  $('#timerBar').style.width = (full ? Math.max(0, Math.min(100, ms / full * 100)) : 0) + '%';
+}
+
+/* ---------- render ---------- */
+function statusOf() {
+  const r = S.round - 1, full = S.settings.roundSec * 1000;
+  if (S.finished) return ['end', 'SELESAI'];
+  if (S.running) return ['run', 'BERLANGSUNG'];
+  if (S.remaining[r] === 0) return ['out', 'WAKTU HABIS'];
+  if (S.remaining[r] < full || S.events.length) return ['pause', 'JEDA'];
+  return ['idle', 'SIAP'];
+}
+function renderHeader() {
+  $('#hdrEvent').textContent = S.info.event || 'Pertandingan Pencak Silat';
+  const parts = [];
+  if (S.info.partai) parts.push('Partai ' + S.info.partai);
+  if (S.info.kelas) parts.push(S.info.kelas);
+  parts.push(`Ronde ${S.round} dari 3`);
+  $('#hdrMeta').textContent = parts.join(' · ');
+  const [cls, txt] = statusOf();
+  $('#hdrActions').innerHTML =
+    `<span class="pill ${cls}"><i></i>${txt}</span>` +
+    `<button class="btn" data-act="role" title="Ganti peran tab ini">Peran: Operator</button>` +
+    `<button class="btn ${armed === 'new' ? 'btn-armed' : 'btn-danger'}" data-act="new">${armed === 'new' ? 'Klik lagi untuk hapus semua data' : 'Pertandingan Baru'}</button>`;
+}
+function panel(c) {
+  const st = stats(c), C = CORNER[c], locked = S.finished, juri = S.settings.mode === 'juri';
+  const cnt = t => S.events.filter(e => e.corner === c && e.type === t).length;
+  const chips = st.rounds.map((R, i) => `<div class="chip ${S.round === i + 1 ? 'on' : ''}"><span>R${i + 1}</span><b>${R.total}</b></div>`).join('');
+  const badges = [];
+  if (cnt('binaan')) badges.push(`<span class="badge">Binaan ×${cnt('binaan')}</span>`);
+  ['t1', 't2', 'p1', 'p2'].forEach(t => { if (cnt(t)) badges.push(`<span class="badge">${TYPES[t].label}</span>`); });
+  if (st.dq) badges.push('<span class="badge dq">DISKUALIFIKASI</span>');
+  { const oth = stats(CORNER[c].other).total; if (st.total > oth) badges.unshift(`<span class="badge lead ${c}">UNGGUL +${st.total - oth}</span>`); }
+  const atkSah = st.rounds.reduce((x, R) => x + R.atk, 0), dedSum = st.rounds.reduce((x, R) => x + R.ded, 0);
+  const jtot = `<div class="jtot">
+      <div class="jtot-h">Poin per Juri · Ronde 1–3</div>
+      <div class="jtot-row">${[1, 2, 3].map(n => `<div><span>Juri ${n}</span><b>${ownPts(n, c)}</b></div>`).join('')}</div>
+      <div class="jtot-sum"><span>Total 3 juri × 3 ronde<br><small style="font-weight:500;opacity:.9">dikurangi sanksi otomatis</small></span><b>${st.total}</b></div>
+      <div class="jtot-sub">Jumlah poin juri <b>${atkSah}</b> · Sanksi <b>${dedSum ? signed(dedSum) : '0'}</b></div>
+    </div>`;
+  const pen = ['binaan', 't1', 't2', 'p1', 'p2'].map(t => {
+    const used = cnt(t) > 0, off = locked || (t !== 'binaan' && used);
+    const sub = t === 'binaan' ? (used ? `×${cnt(t)} · 0 poin` : '0 poin') : `${signed(TYPES[t].pts)} poin`;
+    return `<button class="pen ${used ? 'used' : ''}" data-act="score" data-c="${c}" data-t="${t}" ${off ? 'disabled' : ''}>${TYPES[t].label}<small>${sub}</small></button>`;
+  }).join('');
+  const isArmed = armed === 'dq-' + c;
+  const dq = `<button class="pen dq ${isArmed ? 'btn-armed' : ''}" data-act="dq" data-c="${c}" ${locked || st.dq ? 'disabled' : ''}>${isArmed ? 'Klik lagi untuk konfirmasi' : 'Diskualifikasi'}<small>${isArmed ? '&nbsp;' : 'akhiri pertandingan'}</small></button>`;
+  const clubTxt = clubOf(c);
+  return `<section class="corner corner-${c}">
+    <div>
+      <div class="eyebrow tag">${C.label}</div>
+      <div class="cname">${esc(nameOf(c))}</div>
+      <div class="muted text-sm">${clubTxt ? esc(clubTxt) : '&nbsp;'}</div>
+    </div>
+    <div class="big" aria-label="Total skor ${C.label}">${st.total}</div>
+    <div class="chips">${chips}</div>
+    <div class="badges">${badges.join('')}</div>
+    ${jtot}
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${pen}${dq}</div>
+  </section>`;
+}
+function renderTabs() {
+  const full = S.settings.roundSec * 1000;
+  $('#roundTabs').innerHTML = [1, 2, 3].map(n => {
+    const timeUp = S.round === n - 1 && S.remaining[S.round - 1] === 0 && !S.running;
+    return `<button class="tab ${S.round === n ? 'on' : ''} ${timeUp ? 'next' : ''}" data-act="round" data-n="${n}" aria-pressed="${S.round === n}">R${n}</button>`;
+  }).join('');
+  const r = S.round - 1, ms = S.remaining[r];
+  $('#btnPlay').textContent = S.running ? 'Pause' : (ms < full && ms > 0 ? 'Lanjut' : 'Play');
+  $('#btnPlay').className = 'btn ' + (S.running ? 'btn-primary' : 'btn-ok');
+  $('#btnPlay').disabled = S.finished;
+  $('#timerNote').textContent = ms === 0 ? (S.round < 3 ? 'Waktu habis. Lanjut ke ronde berikutnya.' : 'Waktu ronde terakhir habis.') : `Ronde ${S.round} · durasi ${fmt(full)}`;
+}
+function renderResult() {
+  const R = result();
+  let h;
+  if (R.empty) {
+    h = '<div class="muted text-sm">Belum ada skor. Pemenang ditentukan otomatis dari poin, pelanggaran dan keputusan khusus.</div>';
+  } else if (R.winner) {
+    const lbl = S.finished ? 'Pemenang' : (['Menang Angka'].includes(R.label) ? 'Unggul sementara' : 'Pemenang');
+    h = `<div class="winbox">
+      <div class="eyebrow">${lbl}</div>
+      <div class="winner ${R.winner}">${esc(nameOf(R.winner))}</div>
+      <div class="muted text-sm">${CORNER[R.winner].label}${clubOf(R.winner) ? ' · ' + esc(clubOf(R.winner)) : ''}</div>
+      <div class="disp mt-2 text-xl font-bold uppercase" style="color:var(--amber)">${R.label}</div>
+      <div class="muted text-sm">${esc(R.detail)}</div>
+    </div>`;
+  } else {
+    h = `<div class="winbox">
+      <div class="winner" style="color:var(--amber)">SKOR SERI ${R.red} : ${R.blue}</div>
+      <div class="muted mb-2 text-sm">Putuskan pemenang berdasarkan keputusan Dewan Juri.</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn" data-act="tie" data-c="red" style="border-color:#e2b3b8;color:var(--red)">Merah unggul</button>
+        <button class="btn" data-act="tie" data-c="blue" style="border-color:#b9c8e6;color:var(--blue)">Biru unggul</button>
+      </div></div>`;
+  }
+  if (S.tie && !R.tied && R.label === 'Menang Angka' && S.events.length) h += '<button class="btn" data-act="untie" style="padding:5px 10px;font-size:13px">Batalkan keputusan juri</button>';
+  $('#resultCard').innerHTML = h;
+
+  const sp = S.special;
+  $('#specialBox').innerHTML = `<div class="border-t pt-3" style="border-color:var(--line)">
+    <label class="lbl" for="spType">Keputusan khusus</label>
+    <select class="field" id="spType" ${S.finished ? 'disabled' : ''}>
+      <option value="mutlak" ${spType === 'mutlak' ? 'selected' : ''}>Menang Mutlak (lawan tidak dapat melanjutkan)</option>
+      <option value="teknik" ${spType === 'teknik' ? 'selected' : ''}>Menang Teknik (lawan mundur / dihentikan wasit)</option>
+    </select>
+    <div class="mt-2 grid grid-cols-2 gap-2">
+      <button class="btn" data-act="special" data-c="red" ${S.finished ? 'disabled' : ''} style="border-color:#e2b3b8;color:var(--red)">Merah menang</button>
+      <button class="btn" data-act="special" data-c="blue" ${S.finished ? 'disabled' : ''} style="border-color:#b9c8e6;color:var(--blue)">Biru menang</button>
+    </div>
+    ${sp ? '<button class="btn mt-2 w-full" data-act="unspecial" style="padding:5px 10px;font-size:13px">Batalkan keputusan khusus</button>' : ''}
+  </div>`;
+  $('#finishBox').innerHTML = S.finished
+    ? '<button class="btn w-full" data-act="reopen">Buka kembali pertandingan</button>' + (S.settings.mode === 'juri' ? '<button class="btn btn-primary w-full" data-act="pdf" data-kind="juri" style="margin-top:8px">Unduh Rekap Juri (PDF)</button>' : '')
+    : '<button class="btn btn-primary w-full" data-act="finish" style="min-height:48px">Akhiri Pertandingan</button>';
+}
+function renderBreakdown() {
+  const r = stats('red'), b = stats('blue');
+  const pen = R => R.pen.length ? R.pen.map(t => TYPES[t].short).join(' ') : '–';
+  const rows = [0, 1, 2].map(i => `<tr>
+    <td>Ronde ${i + 1}${S.round === i + 1 ? ' <span class="muted">●</span>' : ''}</td>
+    <td class="r">${r.rounds[i].atk}</td><td class="r">${pen(r.rounds[i])}</td><td class="r"><b>${r.rounds[i].total}</b></td>
+    <td class="b split">${b.rounds[i].atk}</td><td class="b">${pen(b.rounds[i])}</td><td class="b"><b>${b.rounds[i].total}</b></td></tr>`).join('');
+  $('#breakdown').innerHTML = `<table class="tbl">
+    <thead>
+      <tr><th rowspan="2">Ronde</th><th colspan="3" class="r">Sudut Merah</th><th colspan="3" class="b split">Sudut Biru</th></tr>
+      <tr><th>Serangan</th><th>Pelanggaran</th><th>Skor</th><th class="split">Serangan</th><th>Pelanggaran</th><th>Skor</th></tr>
+    </thead>
+    <tbody>${rows}
+      <tr class="tot"><td>TOTAL</td><td colspan="2"></td><td class="r">${r.total}</td><td colspan="2" class="split"></td><td class="b">${b.total}</td></tr>
+    </tbody></table>`;
+}
+function renderLog() {
+  const juri = S.settings.mode === 'juri';
+  const rows = [];
+  S.events.forEach(e => {
+    if (juri && TYPES[e.type].kind === 'atk') return;
+    rows.push({ k: 'op', id: e.id, ts: e.ts || 0, o: e.id, round: e.round, t: e.t, corner: e.corner, type: e.type });
+  });
+  if (juri) jeval(S.settings).points.forEach((p, i) => rows.push({ k: 'j', ts: p.ts, o: 1e6 + i, round: p.round, t: p.t, corner: p.corner, type: p.type, by: p.judges }));
+  rows.sort((a, b) => (a.ts - b.ts) || (a.o - b.o)); rows.reverse();
+  $('#btnUndo').disabled = !S.events.length || S.finished;
+  $('#logList').innerHTML = rows.length ? rows.map(r => {
+    const T = TYPES[r.type], pts = T.pts ? signed(T.pts) : '';
+    const by = r.k === 'j' ? ` <small class="muted">sah J${r.by.join('·J')}</small>` : '';
+    const del = r.k === 'op'
+      ? `<button data-act="del" data-id="${r.id}" aria-label="Hapus kejadian" ${S.finished && r.type !== 'dq' ? 'disabled' : ''}>×</button>`
+      : '<span></span>';
+    return `<li><span class="t">R${r.round} · ${r.t}</span><span class="w ${r.corner}">${CORNER[r.corner].short}</span><span>${T.label} <b>${pts}</b>${by}</span>${del}</li>`;
+  }).join('') : '<li><span class="muted" style="grid-column:1/-1">Belum ada kejadian tercatat.</span></li>';
+}
+function renderAll() {
+  renderHeader();
+  $('#panelRed').innerHTML = panel('red');
+  $('#panelBlue').innerHTML = panel('blue');
+  renderTabs(); drawTimer(); renderResult(); renderBreakdown(); renderLog(); renderJuriBox(); refreshNav(); renderRoundLead(); renderRekap(); renderSum(); refreshNet(); bcSoon();
+}
+
+/* ---------- laporan resmi ---------- */
+function reportHTML() {
+  const r = stats('red'), b = stats('blue'), R = result();
+  const pen = A => A.length ? A.map(t => TYPES[t].short).join(' ') : '–';
+  const rowsDef = [
+    ['Pukulan (+1)', x => x.punch, 'n'],
+    ['Tendangan (+2)', x => x.kick, 'n'],
+    ['Jatuhan (+3)', x => x.takedown, 'n'],
+    ['Poin serangan', x => x.atk, 'sub'],
+    ['Binaan (0)', x => x.binaan, 'n'],
+    ['Teguran / Peringatan / DQ', x => pen(x.pen), 't'],
+    ['Pengurangan poin', x => x.ded ? signed(x.ded) : '0', 'n'],
+    ['Nilai ronde', x => x.total, 'tot']
+  ];
+  const sum = (st, f) => st.rounds.reduce((a, x) => a + f(x), 0);
+  const totalOf = (st, def) => {
+    if (def[2] === 't') return pen(st.rounds.flatMap(x => x.pen));
+    if (def[0] === 'Pengurangan poin') { const v = sum(st, x => x.ded); return v ? signed(v) : '0'; }
+    return sum(st, def[1]);
+  };
+  const body = rowsDef.map(d => {
+    const cls = d[2] === 'sub' ? 'sub' : d[2] === 'tot' ? 'tot' : '';
+    const cell = st => st.rounds.map(x => `<td>${d[1](x)}</td>`).join('') + `<td><b>${totalOf(st, d)}</b></td>`;
+    return `<tr class="${cls}"><td class="lab">${d[0]}</td>${cell(r)}${cell(b)}</tr>`;
+  }).join('');
+
+  const pr = S.events.filter(e => TYPES[e.type].kind === 'pen');
+  const logRows = pr.slice(0, 10).map(e => `<tr><td>Ronde ${e.round}</td><td>sisa ${e.t}</td><td>${CORNER[e.corner].label} – ${esc(nameOf(e.corner))}</td><td>${TYPES[e.type].label}${TYPES[e.type].pts ? ' (' + signed(TYPES[e.type].pts) + ')' : ''}</td></tr>`).join('');
+  const logBlock = pr.length ? `<h3>Catatan Pelanggaran</h3><table class="ev-list"><tr><th>Ronde</th><th>Waktu</th><th>Sudut</th><th>Jenis</th></tr>${logRows}</table>${pr.length > 10 ? `<div style="font-size:9px">+ ${pr.length - 10} catatan lainnya</div>` : ''}` : '';
+
+  let win;
+  if (R.winner) {
+    win = `<div class="win ${S.finished ? '' : 'prov'}">
+      <div class="t1">${S.finished ? 'Pemenang Pertandingan' : 'Pemenang Sementara (pertandingan belum diakhiri)'}</div>
+      <div class="t2">${CORNER[R.winner].label} – ${esc(nameOf(R.winner))}</div>
+      <div class="t3">${R.label}${R.winner && R.red + R.blue >= 0 ? ` • ${R.red} : ${R.blue}` : ''}</div>
+      <div class="t4">${clubOf(R.winner) ? 'Kontingen ' + esc(clubOf(R.winner)) + '. ' : ''}${esc(R.detail)}</div></div>`;
+  } else {
+    win = `<div class="win prov"><div class="t1">Status Pertandingan</div><div class="t2">${R.tied ? 'Skor Seri ' + R.red + ' : ' + R.blue : 'Belum Ada Hasil'}</div><div class="t4">${R.tied ? 'Menunggu keputusan Dewan Juri.' : 'Belum ada skor tercatat.'}</div></div>`;
+  }
+  const sgn = (t, n) => `<td><div>${t}</div><div class="sp"></div><div class="ln">${n ? '( ' + esc(n) + ' )' : '(&nbsp;..........................&nbsp;)'}</div></td>`;
+  return `<div class="rp">
+    <div class="head">
+      <h1>Berita Acara Pertandingan Pencak Silat</h1>
+      <div class="ev">${esc(S.info.event || '-')}</div>
+    </div>
+    <table class="meta">
+      <tr><td class="k">Nomor Partai</td><td class="c">:</td><td>${esc(S.info.partai || '-')}</td><td class="k">Tanggal / Waktu</td><td class="c">:</td><td>${esc(fmtDate(S.info.datetime))}</td></tr>
+      <tr><td class="k">Kelas Tanding</td><td class="c">:</td><td>${esc(S.info.kelas || '-')}</td><td class="k">Ketua Pertandingan</td><td class="c">:</td><td>${esc(S.info.ketua || '-')}</td></tr>
+      <tr><td class="k">Sudut Merah</td><td class="c">:</td><td>${esc(nameOf('red'))} (${esc(clubOf('red') || '-')})</td><td class="k">Sudut Biru</td><td class="c">:</td><td>${esc(nameOf('blue'))} (${esc(clubOf('blue') || '-')})</td></tr>
+      <tr><td class="k">Dewan Juri</td><td class="c">:</td><td colspan="4">${esc(S.info.juri || '-')}</td></tr>
+    </table>
+    <table class="grid">
+      <tr><th rowspan="2" style="width:26%">Rincian</th><th colspan="4" class="red">SUDUT MERAH<br>${esc(nameOf('red'))}</th><th colspan="4" class="blue">SUDUT BIRU<br>${esc(nameOf('blue'))}</th></tr>
+      <tr><th class="red">R1</th><th class="red">R2</th><th class="red">R3</th><th class="red">Total</th><th class="blue">R1</th><th class="blue">R2</th><th class="blue">R3</th><th class="blue">Total</th></tr>
+      ${body}
+    </table>
+    <table class="tt"><tr>
+      <td style="width:42%"><div class="cr">SUDUT MERAH</div><div class="sc">${r.total}</div><div class="nm">${esc(nameOf('red'))}</div><div class="ko">${esc(clubOf('red'))}</div></td>
+      <td style="width:16%;font-weight:800;font-size:14px">TOTAL<br>SKOR AKHIR</td>
+      <td style="width:42%"><div class="cr">SUDUT BIRU</div><div class="sc">${b.total}</div><div class="nm">${esc(nameOf('blue'))}</div><div class="ko">${esc(clubOf('blue'))}</div></td>
+    </tr></table>
+    ${win}
+    ${logBlock}
+    ${juriReportBlock()}
+    <table class="sign"><tr>
+      ${sgn('Ketua Pertandingan', S.info.ketua)}
+      ${sgn('Dewan Juri', (S.info.juri || '').split(',')[0].trim())}
+      ${sgn('Manajer / Pelatih<br>Sudut Merah', S.red.manager)}
+      ${sgn('Manajer / Pelatih<br>Sudut Biru', S.blue.manager)}
+    </tr></table>
+    <div class="foot">Dokumen dibuat otomatis oleh Sistem Penilaian Pertandingan Pencak Silat pada ${esc(new Date().toLocaleString('id-ID'))}</div>
+  </div>`;
+}
+function openPreview() { $('#paper').innerHTML = docHTML(); $('#modalTitle').textContent = docKind === 'juri' ? 'Pratinjau Rekap Penilaian Juri' : 'Pratinjau Berita Acara Pertandingan'; $('#modal').classList.add('open'); }
+function closePreview() { $('#modal').classList.remove('open'); }
+function printReport() {
+  const host = $('#printHost');
+  host.innerHTML = docHTML();
+  const clear = () => { host.innerHTML = ''; window.removeEventListener('afterprint', clear); };
+  window.addEventListener('afterprint', clear);
+  setTimeout(() => window.print(), 60);
+}
+async function downloadPDF() {
+  if (!window.html2pdf) { toast('Library PDF belum termuat. Gunakan dialog cetak lalu pilih Simpan sebagai PDF.'); return printReport(); }
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;left:-10000px;top:0;width:190mm;background:#fff';
+  el.innerHTML = docHTML();
+  document.body.appendChild(el);
+  const safe = s => (s || '').toString().trim().replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const fname = docName('pdf');
+  try {
+    toast('Menyiapkan PDF...');
+    await html2pdf().set({
+      margin: [10, 10, 10, 10], filename: fname,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css'] }
+    }).from(el.firstElementChild).save();
+    toast('PDF berhasil diunduh');
+  } catch (e) {
+    toast('Gagal membuat PDF. Gunakan Cetak lalu pilih Simpan sebagai PDF.');
+  } finally { el.remove(); }
+}
+
+/* ---------- event handling ---------- */
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  const a = b.dataset.act, c = b.dataset.c;
+  if (ROLE !== 'op' && !['role', 'setRole', 'jhit', 'jundo', 'jround', 'jcopy', 'mload'].includes(a)) return;
+  switch (a) {
+    case 'setRole': setRole(b.dataset.r === 'op' ? 'op' : +b.dataset.r); break;
+    case 'role': setRole(null); break;
+    case 'jhit': judgeHit(c, b.dataset.t); break;
+    case 'jundo': judgeUndo(); break;
+    case 'jround': if (remoteOn()) { toast('Ronde mengikuti operator.'); break; } jRound = +b.dataset.n; lastShell = ''; renderJudge(); break;
+    case 'jcopy': copyCode(); break;
+    case 'mload':
+      if (loadMatchCode($('#mImport').value)) { $('#mImport').value = ''; lastShell = ''; renderJudge(); toast('Data pertandingan dimuat.'); }
+      else toast('Kode pertandingan tidak dikenali.');
+      break;
+    case 'mcopy': copyText($('#mCode')); break;
+    case 'jrTab': jrRound = +b.dataset.n; renderJuriResult(); break;
+    case 'csv': downloadCSV(); break;
+    case 'view': setView(b.dataset.v === 'op' ? 'op' : +b.dataset.v); break;
+    case 'openJ': window.open(location.href.split('#')[0] + '#juri' + b.dataset.n, '_blank'); break;
+    case 'jimport': importJ(); break;
+    case 'jclear':
+      if (armed === 'jclear') { armed = null; clearJ(); renderAll(); toast('Input semua juri dikosongkan.'); }
+      else { armed = 'jclear'; renderJuriBox(); setTimeout(() => { if (armed === 'jclear') { armed = null; renderJuriBox(); } }, 3500); }
+      break;
+    case 'roomcopy': copyStr(room); break;
+    case 'linkcopy': copyStr(roomLink()); break;
+    case 'roomnew': lsSet(KEYROOM, newRoom()); startHost(); toast('Kode ruang baru dibuat. Juri harus memasukkan kode baru.'); break;
+    case 'daTab': daCat = b.dataset.id; $('#a-cat').value = daCat; renderDA(); break;
+    case 'kAdd': addKelas(); break;
+    case 'kGen': genKelas(); break;
+    case 'kDel': delKelas(b.dataset.id); break;
+    case 'aSave': saveAtlet(); break;
+    case 'aCancel': resetAtletForm(); break;
+    case 'aEdit': editAtlet(b.dataset.id); break;
+    case 'aDel': delAtlet(b.dataset.id); break;
+    case 'score': addEvent(c, b.dataset.t); break;
+    case 'dq':
+      if (armed === 'dq-' + c) { armed = null; addEvent(c, 'dq'); }
+      else { armed = 'dq-' + c; renderAll(); const k = armed; setTimeout(() => { if (armed === k) { armed = null; renderAll(); } }, 3500); }
+      break;
+    case 'round': goRound(+b.dataset.n); break;
+    case 'play': S.running ? pause() : play(); break;
+    case 'reset': resetTimer(); break;
+    case 'undo': if (S.events.length && !S.finished) { S.events.pop(); save(); renderAll(); } break;
+    case 'del': removeEvent(+b.dataset.id); break;
+    case 'special': S.special = { type: spType, winner: c }; save(); renderAll(); break;
+    case 'unspecial': S.special = null; save(); renderAll(); break;
+    case 'tie': S.tie = c; save(); renderAll(); break;
+    case 'untie': S.tie = null; save(); renderAll(); break;
+    case 'finish': pause(true); S.finished = true; save(); renderAll(); toast(S.settings.mode === 'juri' ? 'Pertandingan diakhiri. Rekap juri siap diunduh.' : 'Pertandingan diakhiri. Hasil dikunci.'); break;
+    case 'reopen': S.finished = false; save(); renderAll(); break;
+    case 'new':
+      if (armed === 'new') {
+        armed = null; pause(true);
+        const keep = { info: { ...S.info }, red: { ...S.red }, blue: { ...S.blue }, settings: { ...S.settings } };
+        S = freshState(); S.running = false; S.fresh = false;
+        S.info.event = keep.info.event; S.info.kelas = keep.info.kelas; S.info.ketua = keep.info.ketua; S.info.juri = keep.info.juri;
+        S.info.kategori = keep.info.kategori; S.info.kelasId = keep.info.kelasId;
+        S.settings = keep.settings; S.remaining = [1, 2, 3].map(() => S.settings.roundSec * 1000);
+        S.info.partai = String((parseInt(keep.info.partai, 10) || 0) + 1);
+        S.red.name = ''; S.blue.name = ''; S.red.club = ''; S.blue.club = ''; S.red.atletId = ''; S.blue.atletId = ''; clearJ();
+        save(); syncForm(); syncSettings(); fillPickers(); renderAll(); toast('Partai baru siap. Data event dan nomor partai dilanjutkan.');
+        $('#setup').open = true;
+      } else { armed = 'new'; renderHeader(); setTimeout(() => { if (armed === 'new') { armed = null; renderHeader(); } }, 3500); }
+      break;
+    case 'clearEvent': setEventName(''); $('#f-event').focus(); break;
+    case 'useEvent': if (hist[+b.dataset.i] != null) { setEventName(hist[+b.dataset.i]); pushHist(S.info.event); } break;
+    case 'delEvent': hist.splice(+b.dataset.i, 1); saveHist(); renderHist(); break;
+    case 'preview': if (b.dataset.kind) docKind = b.dataset.kind; openPreview(); break;
+    case 'closeModal': closePreview(); break;
+    case 'print': if (b.dataset.kind) docKind = b.dataset.kind; printReport(); break;
+    case 'pdf': if (b.dataset.kind) docKind = b.dataset.kind; downloadPDF(); break;
+  }
+});
+document.addEventListener('change', ev => {
+  if (ev.target.id === 'spType') spType = ev.target.value;
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') closePreview();
+  if (ROLE === 'op' && ev.code === 'Space' && !/^(INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY)$/.test(ev.target.tagName)) {
+    ev.preventDefault(); S.running ? pause() : play();
+  }
+});
+
+/* form data pertandingan */
+function setPath(path, v) { const [a, b] = path.split('.'); S[a][b] = v; }
+function getPath(path) { const [a, b] = path.split('.'); return S[a][b]; }
+function syncForm() { document.querySelectorAll('[data-k]').forEach(i => { i.value = getPath(i.dataset.k) || ''; }); }
+document.querySelectorAll('[data-k]').forEach(i => i.addEventListener('input', () => {
+  setPath(i.dataset.k, i.value); save(); renderHeader();
+  $('#panelRed').innerHTML = panel('red'); $('#panelBlue').innerHTML = panel('blue'); renderResult();
+}));
+
+$('#f-event').addEventListener('change', () => pushHist($('#f-event').value));
+$('#f-event').addEventListener('keydown', ev => { if (ev.key === 'Enter') { pushHist($('#f-event').value); ev.target.blur(); } });
+$('#hdrEvent').addEventListener('click', () => { $('#setup').open = true; const f = $('#f-event'); f.focus(); f.select(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+
+/* pengaturan timer */
+function syncSettings() {
+  const s = S.settings.roundSec;
+  $('#durMin').value = Math.floor(s / 60); $('#durSec').value = s % 60; $('#techDiff').value = S.settings.techDiff;
+  $('#jWin').value = S.settings.jWindow;
+}
+function onDur() {
+  const old = S.settings.roundSec * 1000;
+  let sec = (parseInt($('#durMin').value, 10) || 0) * 60 + (parseInt($('#durSec').value, 10) || 0);
+  sec = Math.max(10, Math.min(1200, sec));
+  S.settings.roundSec = sec;
+  if (!S.running) S.remaining = S.remaining.map(ms => (ms === old ? sec * 1000 : Math.min(ms, sec * 1000)));
+  save(); renderTabs(); drawTimer(); renderHeader();
+}
+$('#durMin').addEventListener('change', () => { onDur(); syncSettings(); });
+$('#durSec').addEventListener('change', () => { onDur(); syncSettings(); });
+$('#techDiff').addEventListener('change', () => {
+  S.settings.techDiff = Math.max(0, Math.min(99, parseInt($('#techDiff').value, 10) || 0));
+  save(); syncSettings(); renderAll();
+});
+
+
+/* ================= data atlet & kelas tanding ================= */
+const KEYA = 'silat-atlet-v1', KEYJ = n => 'silat-juri-' + n, KEYHB = 'silat-hb', KEYJHB = n => 'silat-jhb-' + n;
+const CATS = [
+  { id: 'dini', label: 'Usia Dini' }, { id: 'pra', label: 'Pra Remaja' },
+  { id: 'remaja', label: 'Remaja' }, { id: 'dewasa', label: 'Dewasa' }, { id: 'open', label: 'Kelas Open' }
+];
+const catLabel = id => (CATS.find(c => c.id === id) || {}).label || '';
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const lsDel = k => { try { localStorage.removeItem(k); } catch (e) {} };
+const ssGet = k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
+const ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) {} };
+
+function seedA() {
+  const kelas = []; let n = 0;
+  const add = (cat, name, gender, min, max) => kelas.push({ id: 'k' + (++n), cat, name, gender, min, max });
+  const putra = [[45, 50], [50, 55], [55, 60], [60, 65], [65, 70], [70, 75], [75, 80], [80, 85], [85, 90], [90, 95]];
+  const putri = [[45, 50], [50, 55], [55, 60], [60, 65], [70, 75], [75, 80]];
+  putra.forEach((r, i) => add('dewasa', 'Kelas ' + 'ABCDEFGHIJ'[i], 'Putra', r[0], r[1]));
+  putri.forEach((r, i) => add('dewasa', 'Kelas ' + 'ABCDEF'[i], 'Putri', r[0], r[1]));
+  add('open', 'Kelas Open', 'Putra', null, null);
+  add('open', 'Kelas Open', 'Putri', null, null);
+  return { kelas, atlet: [], seq: n };
+}
+function loadA() {
+  try {
+    const o = JSON.parse(lsGet(KEYA));
+    if (o && Array.isArray(o.kelas) && Array.isArray(o.atlet)) return Object.assign({ seq: 1000 }, o);
+  } catch (e) {}
+  return seedA();
+}
+let A = loadA();
+function saveA() { lsSet(KEYA, JSON.stringify(A)); }
+
+const rng = k => (k.min != null && k.max != null) ? ` (${k.min}–${k.max} kg)` : '';
+const kelasLabel = k => `${k.name}${k.gender ? ' ' + k.gender : ''}${rng(k)}`;
+const kelasOf = id => A.kelas.find(k => k.id === id);
+const atletOf = id => A.atlet.find(a => a.id === id);
+const opt = (v, t, sel) => `<option value="${esc(v)}"${sel ? ' selected' : ''}>${esc(t)}</option>`;
+
+/* pemilih di Data Pertandingan */
+function fillPickers() {
+  const I = S.info;
+  $('#p-cat').innerHTML = opt('', 'Semua kategori', !I.kategori) + CATS.map(c => opt(c.id, c.label, I.kategori === c.id)).join('');
+  const ks = A.kelas.filter(k => !I.kategori || k.cat === I.kategori);
+  $('#p-kelas').innerHTML = opt('', ks.length ? 'Pilih kelas…' : 'Belum ada kelas', !I.kelasId) +
+    ks.map(k => opt(k.id, (I.kategori ? '' : catLabel(k.cat) + ' – ') + kelasLabel(k), I.kelasId === k.id)).join('');
+  const pool = A.atlet.filter(a => I.kelasId ? a.kelasId === I.kelasId : (!I.kategori || a.cat === I.kategori));
+  const fill = (sel, c) => {
+    const other = S[CORNER[c].other].atletId, cur = S[c].atletId;
+    const list = pool.filter(a => a.id !== other);
+    if (cur && !list.some(a => a.id === cur) && atletOf(cur)) list.unshift(atletOf(cur));
+    $(sel).innerHTML = opt('', list.length ? 'Pilih atlet…' : 'Belum ada atlet di kelas ini', !cur) +
+      list.map(a => opt(a.id, a.name + (a.club ? ' — ' + a.club : ''), a.id === cur)).join('');
+  };
+  fill('#p-red', 'red'); fill('#p-blue', 'blue');
+}
+$('#p-cat').addEventListener('change', e => { S.info.kategori = e.target.value; S.info.kelasId = ''; save(); fillPickers(); });
+$('#p-kelas').addEventListener('change', e => {
+  const k = kelasOf(e.target.value);
+  S.info.kelasId = e.target.value;
+  if (k) { S.info.kategori = k.cat; S.info.kelas = `${catLabel(k.cat)} – ${kelasLabel(k)}`; }
+  save(); syncForm(); fillPickers(); renderAll();
+});
+[['red', '#p-red'], ['blue', '#p-blue']].forEach(([c, sel]) => $(sel).addEventListener('change', e => {
+  const a = atletOf(e.target.value);
+  S[c].atletId = a ? a.id : '';
+  if (a) { S[c].name = a.name; S[c].club = a.club || ''; S[c].manager = a.coach || ''; }
+  save(); syncForm(); fillPickers(); renderAll();
+}));
+
+/* panel Data Atlet & Kelas Tanding */
+let daCat = 'dewasa', editId = null;
+function renderDA() {
+  $('#daSum').textContent = `${A.atlet.length} atlet · ${A.kelas.length} kelas`;
+  $('#daTabs').innerHTML = CATS.map(c => `<button type="button" class="da-tab ${daCat === c.id ? 'on' : ''}" data-act="daTab" data-id="${c.id}">${c.label}<small>${A.kelas.filter(k => k.cat === c.id).length} kelas · ${A.atlet.filter(a => a.cat === c.id).length} atlet</small></button>`).join('');
+  $('#daCatName').textContent = $('#daCatName2').textContent = catLabel(daCat);
+
+  const ks = A.kelas.filter(k => k.cat === daCat).sort((a, b) => (a.gender || '').localeCompare(b.gender || '') || ((a.min == null ? 1e9 : a.min) - (b.min == null ? 1e9 : b.min)));
+  $('#daKelas').innerHTML = ks.length ? `<table class="tbl"><thead><tr><th>Kelas</th><th>Jenis</th><th>Berat</th><th>Atlet</th><th></th></tr></thead><tbody>` +
+    ks.map(k => `<tr><td class="l">${esc(k.name)}</td><td>${esc(k.gender || '–')}</td><td>${k.min != null && k.max != null ? k.min + '–' + k.max + ' kg' : 'Tanpa batas'}</td><td>${A.atlet.filter(a => a.kelasId === k.id).length}</td><td class="act"><button type="button" data-act="kDel" data-id="${k.id}">hapus</button></td></tr>`).join('') +
+    '</tbody></table>' : '<div class="muted text-sm" style="padding:8px 0">Belum ada kelas untuk kategori ini. Tambahkan satu per satu atau gunakan &quot;Buat kelas berurutan&quot; sesuai petunjuk teknis event.</div>';
+
+  const catSel = $('#a-cat').value || daCat, cur = $('#a-kelas').value;
+  const kk = A.kelas.filter(k => k.cat === catSel);
+  $('#a-kelas').innerHTML = opt('', kk.length ? '— belum dipilih —' : 'Belum ada kelas', !cur) + kk.map(k => opt(k.id, kelasLabel(k), k.id === cur)).join('');
+
+  const q = ($('#a-q').value || '').trim().toLowerCase();
+  const list = A.atlet.filter(a => a.cat === daCat && (!q || (a.name + ' ' + (a.club || '')).toLowerCase().includes(q)));
+  $('#daAtlet').innerHTML = list.length ? `<table class="tbl"><thead><tr><th>Nama</th><th>Kontingen</th><th>Kelas</th><th>Berat</th><th></th></tr></thead><tbody>` +
+    list.map(a => { const k = kelasOf(a.kelasId); return `<tr><td class="l">${esc(a.name)}</td><td>${esc(a.club || '–')}</td><td>${k ? esc(kelasLabel(k)) : '–'}</td><td>${a.weight ? a.weight + ' kg' : '–'}</td><td class="act"><button type="button" data-act="aEdit" data-id="${a.id}">ubah</button><button type="button" data-act="aDel" data-id="${a.id}">hapus</button></td></tr>`; }).join('') +
+    '</tbody></table>' : `<div class="muted text-sm" style="padding:8px 0">${q ? 'Tidak ada atlet yang cocok.' : 'Belum ada atlet pada kategori ini.'}</div>`;
+
+  $('#clubList').innerHTML = [...new Set(A.atlet.map(a => a.club).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+}
+function afterA() { saveA(); renderDA(); fillPickers(); }
+const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+
+function addKelas() {
+  const name = $('#k-name').value.trim();
+  if (!name) return toast('Isi nama kelas terlebih dahulu.');
+  const min = num($('#k-min').value), max = num($('#k-max').value);
+  if ((min == null) !== (max == null)) return toast('Isi berat minimum dan maksimum, atau kosongkan keduanya.');
+  if (min != null && max <= min) return toast('Berat maksimum harus lebih besar dari minimum.');
+  A.kelas.push({ id: 'k' + (++A.seq), cat: daCat, name, gender: $('#k-gender').value, min, max });
+  $('#k-name').value = ''; $('#k-min').value = ''; $('#k-max').value = '';
+  afterA(); toast('Kelas ditambahkan.');
+}
+function genKelas() {
+  const lo0 = num($('#g-min').value), hi = num($('#g-max').value), step = num($('#g-step').value), g = $('#g-gender').value;
+  if (lo0 == null || hi == null || !step || step <= 0 || hi <= lo0) return toast('Periksa angka berat mulai, sampai, dan selisih.');
+  const genders = g === 'both' ? ['Putra', 'Putri'] : [g];
+  let made = 0;
+  genders.forEach(gen => {
+    let lo = lo0, i = 0;
+    while (lo < hi && i < 26) {
+      const up = Math.min(lo + step, hi), name = 'Kelas ' + String.fromCharCode(65 + i);
+      if (!A.kelas.some(k => k.cat === daCat && k.name === name && k.gender === gen)) { A.kelas.push({ id: 'k' + (++A.seq), cat: daCat, name, gender: gen, min: lo, max: up }); made++; }
+      lo = up; i++;
+    }
+  });
+  afterA(); toast(made ? `${made} kelas dibuat.` : 'Kelas dengan nama itu sudah ada.');
+}
+function delKelas(id) {
+  const k = kelasOf(id); if (!k) return;
+  const n = A.atlet.filter(a => a.kelasId === id).length;
+  if (n) return toast(`Masih ada ${n} atlet di kelas ini. Pindahkan atletnya dulu.`);
+  if (!confirm(`Hapus ${k.name} ${k.gender || ''}?`)) return;
+  A.kelas = A.kelas.filter(x => x.id !== id);
+  if (S.info.kelasId === id) { S.info.kelasId = ''; save(); }
+  afterA();
+}
+function resetAtletForm() {
+  editId = null;
+  $('#a-name').value = ''; $('#a-weight').value = '';
+  $('#aSaveBtn').textContent = 'Simpan atlet'; $('#aCancelBtn').hidden = true;
+}
+function saveAtlet() {
+  const name = $('#a-name').value.trim();
+  if (!name) return toast('Nama atlet wajib diisi.');
+  const rec = { name, club: $('#a-club').value.trim(), coach: $('#a-coach').value.trim(), cat: $('#a-cat').value || daCat, kelasId: $('#a-kelas').value, weight: num($('#a-weight').value) };
+  if (editId && atletOf(editId)) Object.assign(atletOf(editId), rec);
+  else A.atlet.push(Object.assign({ id: 'a' + (++A.seq) }, rec));
+  const wasEdit = !!editId;
+  daCat = rec.cat; resetAtletForm();
+  afterA(); toast(wasEdit ? 'Data atlet diperbarui.' : 'Atlet disimpan.');
+  $('#a-name').focus();
+}
+function editAtlet(id) {
+  const a = atletOf(id); if (!a) return;
+  editId = id; daCat = a.cat;
+  $('#a-cat').value = a.cat; renderDA();
+  $('#a-name').value = a.name; $('#a-club').value = a.club || ''; $('#a-coach').value = a.coach || '';
+  $('#a-kelas').value = a.kelasId || ''; $('#a-weight').value = a.weight == null ? '' : a.weight;
+  $('#aSaveBtn').textContent = 'Perbarui atlet'; $('#aCancelBtn').hidden = false;
+  $('#a-name').focus(); $('#a-name').scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function delAtlet(id) {
+  const a = atletOf(id); if (!a) return;
+  if (!confirm(`Hapus atlet ${a.name}?`)) return;
+  A.atlet = A.atlet.filter(x => x.id !== id);
+  ['red', 'blue'].forEach(c => { if (S[c].atletId === id) S[c].atletId = ''; });
+  if (editId === id) resetAtletForm();
+  save(); afterA();
+}
+$('#a-cat').innerHTML = CATS.map(c => opt(c.id, c.label, c.id === daCat)).join('');
+$('#a-cat').addEventListener('change', e => { daCat = e.target.value; $('#a-kelas').value = ''; renderDA(); });
+$('#a-q').addEventListener('input', renderDA);
+
+/* ================= penilaian juri ================= */
+const validJE = e => e && Number.isFinite(e.id) && [1, 2, 3].includes(e.round) && (e.corner === 'red' || e.corner === 'blue') &&
+  ['punch', 'kick', 'takedown'].includes(e.type) && Number.isFinite(e.ts);
+let J = { 1: [], 2: [], 3: [] };
+function loadJ() {
+  if (remoteOn()) return;
+  [1, 2, 3].forEach(n => {
+    let a = []; try { a = JSON.parse(lsGet(KEYJ(n))) || []; } catch (e) {}
+    J[n] = Array.isArray(a) ? a.filter(validJE) : [];
+  });
+}
+function saveJ(n) { if (remoteOn()) return; lsSet(KEYJ(n), JSON.stringify(J[n])); }
+function clearJ() { [1, 2, 3].forEach(n => { lsDel(KEYJ(n)); J[n] = []; }); }
+
+/* Poin sah: minimal N juri menekan teknik yang sama, pada sudut dan ronde yang sama, dalam jendela waktu */
+function jeval(st) {
+  st = st || S.settings;
+  const win = (st.jWindow || 3) * 1000, q = [1, 2, 3].includes(st.jQuorum) ? st.jQuorum : 2, now = Date.now();
+  const groups = {}, points = [], status = {};
+  [1, 2, 3].forEach(j => (J[j] || []).forEach(e => {
+    const k = e.round + '|' + e.corner + '|' + e.type;
+    (groups[k] = groups[k] || []).push(Object.assign({ j }, e));
+  }));
+  if (q === 1) {
+    [1, 2, 3].forEach(j => (J[j] || []).forEach(e => { status[j + ':' + e.id] = 'sah'; points.push({ round: e.round, corner: e.corner, type: e.type, ts: e.ts, t: e.t, judges: [j] }); }));
+    points.sort((a, b) => a.ts - b.ts);
+    return { points, status };
+  }
+  Object.keys(groups).forEach(k => {
+    const list = groups[k].sort((a, b) => a.ts - b.ts || a.j - b.j), used = new Set();
+    list.forEach((a, i) => {
+      if (used.has(a)) return;
+      const cl = [a], seen = new Set([a.j]);
+      for (let m = i + 1; m < list.length; m++) {
+        const b = list[m];
+        if (b.ts - a.ts > win) break;
+        if (used.has(b) || seen.has(b.j)) continue;
+        cl.push(b); seen.add(b.j);
+      }
+      if (cl.length >= q) {
+        cl.forEach(x => { used.add(x); status[x.j + ':' + x.id] = 'sah'; });
+        points.push({ round: a.round, corner: a.corner, type: a.type, ts: a.ts, t: a.t, judges: cl.map(x => x.j).sort() });
+      } else status[a.j + ':' + a.id] = (now - a.ts <= win) ? 'tunggu' : 'tidak';
+    });
+  });
+  return { points, status };
+}
+
+function juriReportBlock() {
+  if (S.settings.mode !== 'juri') return '';
+  const ev = jeval(S.settings), T = ['punch', 'kick', 'takedown'];
+  const cnt = (n, c, t) => J[n].filter(e => e.corner === c && e.type === t).length;
+  const rows = [1, 2, 3].map(n => `<tr><td>Juri ${n}</td>${['red', 'blue'].map(c => T.map(t => `<td>${cnt(n, c, t)}</td>`).join('')).join('')}<td>${J[n].filter(e => ev.status[n + ':' + e.id] === 'sah').length}</td><td>${J[n].length}</td></tr>`).join('');
+  return `<h3>Rekap Input Juri</h3><table class="ev-list"><tr><th rowspan="2">Juri</th><th colspan="3">Sudut Merah</th><th colspan="3">Sudut Biru</th><th rowspan="2">Input sah</th><th rowspan="2">Total input</th></tr><tr><th>Pk</th><th>Td</th><th>Jt</th><th>Pk</th><th>Td</th><th>Jt</th></tr>${rows}</table><div style="font-size:9px">Poin serangan adalah jumlah nilai dari ketiga juri. Pk = pukulan, Td = tendangan, Jt = jatuhan.</div>`;
+}
+
+function renderJuriBox() {
+  const on = S.settings.mode === 'juri';
+  $('#juriBox').hidden = !on;
+  renderJuriResult();
+  if (!on) return;
+  const ev = jeval(S.settings);
+  const rows = [1, 2, 3].map(n => {
+    const a = J[n], last = a[a.length - 1];
+    return `<div class="jrow"><b>Juri ${n}</b><span>${a.length} input</span><span class="muted">${last ? 'terakhir ' + new Date(last.ts).toLocaleTimeString('id-ID') : 'belum ada input'}</span></div>`;
+  }).join('');
+  const sum = c => ev.points.filter(p => p.corner === c).length;
+  $('#jStat').innerHTML = rows + `<div class="jsum">Poin sah: <span style="color:var(--red)">Merah ${sum('red')}</span> · <span style="color:var(--blue)">Biru ${sum('blue')}</span></div>`;
+  const cb = $('#jClearBtn');
+  cb.textContent = armed === 'jclear' ? 'Klik lagi untuk kosongkan' : 'Kosongkan input juri';
+  cb.classList.toggle('btn-armed', armed === 'jclear');
+  const mc = $('#mCode'), code = matchCode();
+  if (mc && mc.value !== code && document.activeElement !== mc) mc.value = code;
+}
+
+function importJ() {
+  const raw = ($('#jImport').value || '').trim();
+  const m = raw.match(/^SILAT-J([123]):([A-Za-z0-9+/=]+)$/);
+  if (!m) return toast('Kode tidak dikenali. Salin kode utuh dari halaman juri.');
+  try {
+    const o = JSON.parse(atob(m[2])), n = +m[1];
+    if (!o || !Array.isArray(o.e)) throw new Error('x');
+    J[n] = o.e.filter(validJE); saveJ(n);
+    $('#jImport').value = '';
+    renderAll(); toast(`Data Juri ${n} diimpor (${J[n].length} input).`);
+  } catch (e) { toast('Kode rusak atau tidak lengkap.'); }
+}
+
+/* ---- tampilan juri ---- */
+function readOp() { if (remoteOn()) return REMOTE ? REMOTE.op : null; try { const o = JSON.parse(lsGet(KEY)); if (o && o.info) return o; } catch (e) {} return null; }
+const opLive = () => { if (remoteOn()) return !!REMOTE && Date.now() - REMOTE.recv < 5000; return opLive0(); };
+const opLive0 = () => { const t = +lsGet(KEYHB); return Number.isFinite(t) && Date.now() - t < 7000; };
+const opName = (op, c) => ((op && op[c] && op[c].name) || '').trim() || CORNER[c].fallback;
+function jctx() {
+  const op = readOp(), live = !!op && opLive();
+  const settings = Object.assign({ jWindow: 3, jQuorum: 1 }, op && op.settings, { jQuorum: 1 });
+  let rem = null, running = false, finished = false;
+  if (op && live) {
+    running = !!op.running; finished = !!op.finished;
+    rem = (running && op.endAt) ? Math.max(0, op.endAt - Date.now()) : (op.remaining || [])[op.round - 1];
+  }
+  return { op, live, settings, running, finished, rem };
+}
+let jRound = 1, lastOpRound = null, lastShell = '';
+const KEYM = 'silat-match';
+const JTOOLS = `<details class="card jsend"><summary>Operator di perangkat lain?</summary>
+  <p class="muted text-sm">Jika halaman operator tidak dibuka di komputer ini: (1) tempel kode pertandingan dari operator agar nama atlet, kontingen, dan nomor partai tampil, (2) kirim kode nilai Anda ke operator. Pastikan jam kedua perangkat sama.</p>
+  <label class="lbl" for="mImport">1. Kode pertandingan dari operator</label>
+  <textarea class="field" id="mImport" rows="2" placeholder="SILAT-M:..."></textarea>
+  <button class="btn" data-act="mload" style="margin:8px 0 14px">Muat data pertandingan</button>
+  <label class="lbl" for="jCode">2. Kode nilai Anda (kirim ke operator)</label>
+  <textarea class="field" id="jCode" rows="2" readonly></textarea>
+  <button class="btn" data-act="jcopy" style="margin-top:8px">Salin kode nilai</button>
+</details>`;
+function matchCode() {
+  const o = { e: S.info.event || '', p: S.info.partai || '', k: S.info.kelas || '', r: { n: nameOf('red'), c: clubOf('red') }, b: { n: nameOf('blue'), c: clubOf('blue') }, t: Date.now() };
+  return 'SILAT-M:' + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+}
+function loadMatchCode(raw) {
+  const m = String(raw || '').trim().match(/^SILAT-M:([A-Za-z0-9+/=]+)$/);
+  if (!m) return false;
+  try {
+    const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    if (!o || !o.r || !o.b) return false;
+    lsSet(KEYM, JSON.stringify(o)); return true;
+  } catch (e) { return false; }
+}
+/* identitas pertandingan untuk tampilan juri: operator langsung > kode tersimpan > data operator terakhir */
+function matchData() {
+  const x = jctx();
+  const fromOp = op => ({ event: op.info.event, partai: op.info.partai, kelas: op.info.kelas,
+    red: { n: opName(op, 'red'), c: (op.red && op.red.club) || '' }, blue: { n: opName(op, 'blue'), c: (op.blue && op.blue.club) || '' } });
+  if (x.op && x.live) return fromOp(x.op);
+  try {
+    const m = JSON.parse(lsGet(KEYM));
+    if (m && m.r && m.b) return { event: m.e, partai: m.p, kelas: m.k, red: { n: m.r.n || CORNER.red.fallback, c: m.r.c || '' }, blue: { n: m.b.n || CORNER.blue.fallback, c: m.b.c || '' } };
+  } catch (e) {}
+  if (x.op) return fromOp(x.op);
+  return { event: '', partai: '', kelas: '', red: { n: CORNER.red.fallback, c: '' }, blue: { n: CORNER.blue.fallback, c: '' } };
+}
+const SANC = ['binaan', 't1', 't2', 'p1', 'p2', 'dq'];
+function ownPts(n, c) { return J[n].filter(e => e.corner === c).reduce((a, e) => a + TYPES[e.type].pts, 0); }
+/* skor resmi sudut: poin serangan sah (juri) atau input operator, ditambah sanksi */
+function officialScore(src, c, ev) {
+  const evs = (src && src.events) || [];
+  const juri = !!(src && src.settings && src.settings.mode === 'juri');
+  const atk = juri
+    ? ev.points.filter(p => p.corner === c).reduce((a, p) => a + TYPES[p.type].pts, 0)
+    : evs.filter(e => e.corner === c && TYPES[e.type].kind === 'atk').reduce((a, e) => a + TYPES[e.type].pts, 0);
+  const ded = evs.filter(e => e.corner === c && TYPES[e.type].kind === 'pen').reduce((a, e) => a + TYPES[e.type].pts, 0);
+  return { atk, ded, total: atk + ded };
+}
+/* statistik satu sudut menurut satu juri + sanksi aktif dari operator */
+function statBlockHTML(c, n, src, ev, live, curRound) {
+  const mine = J[n].filter(e => e.corner === c);
+  const cnt = t => mine.filter(e => e.type === t).length;
+  const rd = r => mine.filter(e => e.round === r).reduce((a, e) => a + TYPES[e.type].pts, 0);
+  const evs = (src && src.events) || [];
+  const sanc = SANC.map(t => {
+    const k = evs.filter(e => e.corner === c && e.type === t).length;
+    const cls = k ? ' on' + (t === 'dq' ? ' dq' : (t === 'p1' || t === 'p2') ? ' p' : '') : '';
+    return `<span class="sn${cls}">${TYPES[t].label}${t === 'binaan' && k > 1 ? ' ×' + k : ''}</span>`;
+  }).join('');
+  const o = officialScore(src, c, ev);
+  return `<div class="chips">${[1, 2, 3].map(r => `<div class="chip ${curRound === r ? 'on' : ''}"><span>R${r}</span><b>${rd(r)}</b></div>`).join('')}</div>
+    <div class="jcnt"><div><b>${cnt('punch')}</b><span>Total Pukulan</span></div><div><b>${cnt('kick')}</b><span>Total Tendangan</span></div><div><b>${cnt('takedown')}</b><span>Total Jatuhan</span></div></div>
+    <div class="jsn-head">Sanksi aktif dari operator${live ? '' : ' · belum terhubung'}</div>
+    <div class="jsn">${sanc}</div>
+    <div class="jofficial">Skor resmi <b>${o.total}</b> <small>serangan sah ${o.atk} · sanksi ${o.ded ? signed(o.ded) : '0'}</small></div>`;
+}
+function renderJudge() {
+  if (typeof ROLE !== 'number') return;
+  loadJ();
+  const x = jctx(), md = matchData(), op = x.op || freshState();
+  if (x.live && (op.round !== lastOpRound || remoteOn())) { jRound = op.round; lastOpRound = op.round; }
+  const locked = x.live && (x.finished || !x.running);
+  const btn = (c, t) => `<button class="jbtn" data-act="jhit" data-c="${c}" data-t="${t}" ${locked ? 'disabled' : ''}>${ICONS[t]}<span class="n">${signed(TYPES[t].pts)}</span><span class="l">${TYPES[t].label}</span></button>`;
+  const side = c => `<section class="jc jc-${c}">
+      <div class="jhd"><div style="min-width:0"><div class="eyebrow tag">${CORNER[c].label}</div><div class="cname">${esc(md[c].n)}</div><div class="jclub"><span class="muted">Kontingen</span> <b>${esc(md[c].c) || '–'}</b></div></div><div class="jbigwrap"><div class="jbig" id="jbig-${c}">0</div><small>poin serangan Anda</small></div></div>
+      <div class="jbtns">${['punch', 'kick', 'takedown'].map(t => btn(c, t)).join('')}</div>
+      <div class="jstat" id="jstat-${c}"></div></section>`;
+  const shell = `
+    <header class="jhead"><div><div class="eyebrow">Penilaian pertandingan pencak silat</div><div class="jtitle">Juri ${ROLE}</div><div class="netbar" id="jNet"></div></div><button class="btn" data-act="role">Ganti peran</button></header>
+    <section class="card jinfo">
+      <div class="jmatch"><div class="jpartai">PARTAI <b>${esc(md.partai) || '–'}</b></div><div><div class="jev">${esc(md.event) || 'Pertandingan Pencak Silat'}</div><div class="muted text-sm">${esc(md.kelas) || '&nbsp;'}</div></div></div>
+      <div class="jtime"><div class="timer" id="jTimer">--:--</div><span class="pill idle" id="jState"><i></i>TANPA OPERATOR</span></div>
+      <div class="tabs">${[1, 2, 3].map(n => `<button class="tab ${jRound === n ? 'on' : ''}" data-act="jround" data-n="${n}" aria-pressed="${jRound === n}">R${n}</button>`).join('')}</div>
+    </section>
+    <div class="jgrid">${side('red')}${side('blue')}</div>
+    <section class="card jfeedbox"><div class="jfeedhead"><div class="eyebrow">Input Anda</div><button class="btn" data-act="jundo" style="padding:5px 10px;font-size:13px">Batalkan input terakhir</button></div><div class="jcount" id="jCount"></div><ul class="log" id="jFeed"></ul></section>`;
+  if (!$('#jShell')) $('#judgeApp').innerHTML = `<div class="jv"><div id="jShell"></div>${JTOOLS}</div>`;
+  if (shell !== lastShell) { $('#jShell').innerHTML = shell; lastShell = shell; }
+  updateJudge();
+}
+function updateJudge() {
+  if (typeof ROLE !== 'number' || !$('#jTimer')) return;
+  const x = jctx();
+  $('#jTimer').textContent = x.rem == null ? '--:--' : fmt(x.rem);
+  refreshJNet();
+  let cls = 'idle', txt = 'TANPA OPERATOR';
+  if (x.live) { if (x.finished) { cls = 'end'; txt = 'SELESAI'; } else if (x.running) { cls = 'run'; txt = 'BERLANGSUNG'; } else { cls = 'pause'; txt = 'MENUNGGU TIMER'; } }
+  const st = $('#jState'); st.className = 'pill ' + cls; st.innerHTML = `<i></i>${txt}`;
+  const ev = jeval(x.settings), others = [1, 2, 3].some(n => n !== ROLE && J[n].length);
+  const names = { sah: 'Sah', tunggu: 'Menunggu', tidak: 'Belum sah' };
+  const html = J[ROLE].slice(-8).reverse().map(e => {
+    const stt = others ? ev.status[ROLE + ':' + e.id] : null;
+    return `<li><span class="t">R${e.round} · ${e.t}</span><span class="w ${e.corner}">${CORNER[e.corner].short}</span><span>${TYPES[e.type].label} <b>${signed(TYPES[e.type].pts)}</b></span><span class="chip2 ${stt || ''}">${stt ? names[stt] : 'Tercatat'}</span></li>`;
+  }).join('') || '<li><span class="muted" style="grid-column:1/-1">Belum ada input. Tekan tombol teknik saat serangan sah terjadi.</span></li>';
+  const feed = $('#jFeed'); if (feed.innerHTML !== html) feed.innerHTML = html;
+  const cnt = c => J[ROLE].filter(e => e.corner === c).length;
+  $('#jCount').textContent = `Total input Anda: Merah ${cnt('red')} · Biru ${cnt('blue')}`;
+  const src = x.op || { events: [], settings: x.settings };
+  ['red', 'blue'].forEach(c => {
+    const big = $('#jbig-' + c); if (big) big.textContent = ownPts(ROLE, c);
+    setHTML($('#jstat-' + c), statBlockHTML(c, ROLE, src, ev, x.live, jRound));
+  });
+  const code = `SILAT-J${ROLE}:` + btoa(JSON.stringify({ v: 1, j: ROLE, e: J[ROLE] }));
+  const ta = $('#jCode'); if (ta && ta.value !== code && document.activeElement !== ta) ta.value = code;
+}
+function judgeHit(c, type) {
+  const x = jctx();
+  if (x.live && x.finished) return toast('Pertandingan sudah selesai.');
+  if (x.live && !x.running) return toast('Timer belum berjalan. Tunggu operator menekan Play.');
+  if (remoteOn()) {
+    if (!x.live || !jconn || !jconn.open) return toast('Belum terhubung ke operator.');
+    try { jconn.send({ t: 'hit', j: ROLE, c, k: type }); } catch (e) { return toast('Gagal mengirim, coba lagi.'); }
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+    const el0 = document.querySelector(`#judgeApp [data-act="jhit"][data-c="${c}"][data-t="${type}"]`);
+    if (el0) { el0.classList.add('hit'); setTimeout(() => el0.classList.remove('hit'), 180); }
+    return;
+  }
+  loadJ();
+  const id = J[ROLE].reduce((m, e) => Math.max(m, e.id), 0) + 1;
+  J[ROLE].push({ id, round: jRound, corner: c, type, ts: Date.now(), t: x.rem == null ? '--:--' : fmt(x.rem) });
+  saveJ(ROLE);
+  try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) {}
+  const el = document.querySelector(`#judgeApp [data-act="jhit"][data-c="${c}"][data-t="${type}"]`);
+  if (el) { el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 180); }
+  updateJudge();
+}
+function judgeUndo() {
+  if (remoteOn()) { if (jconn && jconn.open) { try { jconn.send({ t: 'undo', j: ROLE }); } catch (e) {} } else toast('Belum terhubung ke operator.'); return; }
+  loadJ();
+  if (!J[ROLE].length) return;
+  J[ROLE].pop(); saveJ(ROLE); updateJudge();
+}
+function copyText(ta) {
+  if (!ta) return;
+  ta.select();
+  const ok = () => toast('Kode disalin.'), fail = () => { try { document.execCommand('copy'); ok(); } catch (e) { toast('Salin manual dari kotak kode.'); } };
+  try { navigator.clipboard.writeText(ta.value).then(ok, fail); } catch (e) { fail(); }
+}
+function copyCode() { copyText($('#jCode')); }
+
+/* ---- hasil juri (operator) + rekap ---- */
+let docKind = 'ba', jrRound = 0;
+const setHTML = (el, h) => { if (el && el._h !== h) { el.innerHTML = h; el._h = h; } };
+const T3 = ['punch', 'kick', 'takedown'];
+const safeName = v => (v || '').toString().trim().replace(/[^\w\-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+const stNames = { sah: 'Sah', tunggu: 'Menunggu', tidak: 'Belum sah' };
+function sideTally(list) {
+  const o = {};
+  ['red', 'blue'].forEach(c => {
+    o[c] = {}; let pts = 0;
+    T3.forEach(t => { o[c][t] = list.filter(e => e.corner === c && e.type === t).length; pts += o[c][t] * TYPES[t].pts; });
+    o[c].pts = pts;
+  });
+  return o;
+}
+function juriRowsFor(rf) {
+  const ev = jeval(S.settings), inR = r => !rf || r === rf;
+  const judges = [1, 2, 3].map(n => Object.assign({ label: 'Juri ' + n }, sideTally(J[n].filter(e => inR(e.round)))));
+  const comb = Object.assign({ label: 'Gabungan (sah)' }, sideTally(ev.points.filter(p => inR(p.round))));
+  const ded = {};
+  ['red', 'blue'].forEach(c => { ded[c] = stats(c).rounds.reduce((a, R, i) => a + (inR(i + 1) ? R.ded : 0), 0); });
+  return { judges, comb, ded, ev };
+}
+function allJuriInputs() {
+  const all = [];
+  [1, 2, 3].forEach(n => J[n].forEach(e => all.push(Object.assign({ j: n }, e))));
+  return all;
+}
+function renderJuriResult() {
+  const on = S.settings.mode === 'juri';
+  $('#juriResult').hidden = !on;
+  if (!on) return;
+  setHTML($('#jrTabs'), [[0, 'Semua'], [1, 'R1'], [2, 'R2'], [3, 'R3']].map(([n, l]) => `<button class="tab ${jrRound === n ? 'on' : ''}" data-act="jrTab" data-n="${n}" aria-pressed="${jrRound === n}">${l}</button>`).join(''));
+  const { judges, comb, ded, ev } = juriRowsFor(jrRound);
+  const cells = o => ['red', 'blue'].map(c => `<td${c === 'blue' ? ' class="split"' : ''}>${o[c].punch}</td><td>${o[c].kick}</td><td>${o[c].takedown}</td><td><b>${o[c].pts}</b></td>`).join('');
+  const fin = c => comb[c].pts + ded[c];
+  setHTML($('#jrTable'), `<table class="tbl"><thead>
+      <tr><th rowspan="2">Penilai</th><th colspan="4" class="r">Sudut Merah · ${esc(nameOf('red'))}</th><th colspan="4" class="b split">Sudut Biru · ${esc(nameOf('blue'))}</th></tr>
+      <tr><th>Pukulan</th><th>Tendangan</th><th>Jatuhan</th><th>Poin</th><th class="split">Pukulan</th><th>Tendangan</th><th>Jatuhan</th><th>Poin</th></tr>
+    </thead><tbody>${judges.map(j => `<tr><td>${j.label}</td>${cells(j)}</tr>`).join('')}
+      <tr class="comb"><td>${comb.label}</td>${cells(comb)}</tr>
+      <tr><td>Pelanggaran (operator)</td><td colspan="3"></td><td>${ded.red ? signed(ded.red) : '0'}</td><td colspan="3" class="split"></td><td>${ded.blue ? signed(ded.blue) : '0'}</td></tr>
+      <tr class="tot"><td>Nilai</td><td colspan="3"></td><td class="r">${fin('red')}</td><td colspan="3" class="split"></td><td class="b">${fin('blue')}</td></tr>
+    </tbody></table>
+    <div class="muted text-xs" style="margin-top:6px">Poin per juri = nilai menurut juri itu sendiri sebelum validasi. Gabungan = jumlah nilai Juri 1 + Juri 2 + Juri 3.</div>`);
+  const all = allJuriInputs().filter(e => !jrRound || e.round === jrRound).sort((a, b) => b.ts - a.ts);
+  setHTML($('#jrLog'), all.slice(0, 150).map(e => {
+    const st = ev.status[e.j + ':' + e.id] || 'tidak';
+    return `<li><span class="t">R${e.round} · ${e.t}</span><span class="w ${e.corner}">${CORNER[e.corner].short}</span><span><b>Juri ${e.j}</b> · ${TYPES[e.type].label} <b>${signed(TYPES[e.type].pts)}</b></span><span class="chip2 ${st}">${stNames[st]}</span></li>`;
+  }).join('') || '<li><span class="muted" style="grid-column:1/-1">Belum ada input juri.</span></li>');
+}
+setInterval(() => { if (ROLE === 'op') { if (S.settings.mode === 'juri') renderJuriResult(); refreshNav(); renderRekap(); renderSum(); } }, 1000);
+
+function juriDocHTML() {
+  const R = result(), st = { red: stats('red'), blue: stats('blue') }, ev = jeval(S.settings);
+  const jn = (S.info.juri || '').split(',').map(v => v.trim());
+  const sumRows = [0, 1, 2].map(i => `<tr><td class="lab">Ronde ${i + 1}</td>` + ['red', 'blue'].map(c => { const r = st[c].rounds[i]; return `<td>${r.atk}</td><td>${signed(r.ded)}</td><td><b>${r.total}</b></td>`; }).join('') + '</tr>').join('');
+  const sumTot = `<tr class="tot"><td class="lab">Total</td>` + ['red', 'blue'].map(c => `<td>${st[c].rounds.reduce((a, r) => a + r.atk, 0)}</td><td>${signed(st[c].rounds.reduce((a, r) => a + r.ded, 0))}</td><td><b>${st[c].total}</b></td>`).join('') + '</tr>';
+  const cells = o => ['red', 'blue'].map(c => `<td>${o[c].punch}</td><td>${o[c].kick}</td><td>${o[c].takedown}</td><td><b>${o[c].pts}</b></td>`).join('');
+  const detail = [1, 2, 3, 0].map(rf => {
+    const { judges, comb } = juriRowsFor(rf);
+    return judges.concat([Object.assign({}, comb, { isComb: true })]).map((r, i) =>
+      `<tr${r.isComb ? ' class="sub"' : ''}>${i === 0 ? `<td class="grp" rowspan="4">${rf ? 'Ronde ' + rf : 'Semua ronde'}</td>` : ''}<td class="lab">${r.label}</td>${cells(r)}</tr>`).join('');
+  }).join('');
+  const all = allJuriInputs().sort((a, b) => a.ts - b.ts);
+  const logRows = all.slice(0, 40).map((e, i) => {
+    const s2 = ev.status[e.j + ':' + e.id] || 'tidak';
+    return `<tr><td>${i + 1}</td><td>R${e.round}</td><td>${e.t}</td><td>Juri ${e.j}</td><td>${CORNER[e.corner].label}</td><td>${TYPES[e.type].label} (${signed(TYPES[e.type].pts)})</td><td>${s2 === 'sah' ? 'Sah' : 'Tidak sah'}</td></tr>`;
+  }).join('');
+  const win = R.winner
+    ? `<div class="win ${S.finished ? '' : 'prov'}"><div class="t1">${S.finished ? 'Pemenang Pertandingan' : 'Pemenang Sementara (pertandingan belum diakhiri)'}</div><div class="t2">${CORNER[R.winner].label} – ${esc(nameOf(R.winner))}</div><div class="t3">${R.label} • ${R.red} : ${R.blue}</div></div>`
+    : `<div class="win prov"><div class="t1">Status Pertandingan</div><div class="t2">${R.tied ? 'Skor Seri ' + R.red + ' : ' + R.blue : 'Belum Ada Hasil'}</div></div>`;
+  const sgn = (t, n) => `<td><div>${t}</div><div class="sp"></div><div class="ln">${n ? '( ' + esc(n) + ' )' : '(&nbsp;..........................&nbsp;)'}</div></td>`;
+  return `<div class="rp">
+    <div class="head"><h1>Rekap Penilaian Juri</h1><div class="ev">${esc(S.info.event || '-')}</div></div>
+    <table class="meta">
+      <tr><td class="k">Nomor Partai</td><td class="c">:</td><td>${esc(S.info.partai || '-')}</td><td class="k">Tanggal / Waktu</td><td class="c">:</td><td>${esc(fmtDate(S.info.datetime))}</td></tr>
+      <tr><td class="k">Kelas Tanding</td><td class="c">:</td><td>${esc(S.info.kelas || '-')}</td><td class="k">Ketua Pertandingan</td><td class="c">:</td><td>${esc(S.info.ketua || '-')}</td></tr>
+      <tr><td class="k">Sudut Merah</td><td class="c">:</td><td>${esc(nameOf('red'))} (${esc(clubOf('red') || '-')})</td><td class="k">Sudut Biru</td><td class="c">:</td><td>${esc(nameOf('blue'))} (${esc(clubOf('blue') || '-')})</td></tr>
+    </table>
+    <h3>Hasil Gabungan Tiga Juri</h3>
+    <table class="grid">
+      <tr><th rowspan="2" style="width:16%">Ronde</th><th colspan="3" class="red">SUDUT MERAH</th><th colspan="3" class="blue">SUDUT BIRU</th></tr>
+      <tr><th class="red">Serangan sah</th><th class="red">Pelanggaran</th><th class="red">Nilai</th><th class="blue">Serangan sah</th><th class="blue">Pelanggaran</th><th class="blue">Nilai</th></tr>
+      ${sumRows}${sumTot}
+    </table>
+    ${win}
+    <h3>Nilai per Juri dan Gabungan</h3>
+    <table class="grid">
+      <tr><th rowspan="2">Ronde</th><th rowspan="2">Penilai</th><th colspan="4" class="red">SUDUT MERAH</th><th colspan="4" class="blue">SUDUT BIRU</th></tr>
+      <tr><th class="red">Pk</th><th class="red">Td</th><th class="red">Jt</th><th class="red">Poin</th><th class="blue">Pk</th><th class="blue">Td</th><th class="blue">Jt</th><th class="blue">Poin</th></tr>
+      ${detail}
+    </table>
+    <div style="font-size:9px;margin-top:3px">Pk = pukulan (+1), Td = tendangan (+2), Jt = jatuhan (+3). Poin per juri adalah nilai menurut juri tersebut sebelum validasi. Gabungan adalah jumlah nilai Juri 1 + Juri 2 + Juri 3.</div>
+    <div class="pb"></div>
+    <h3>Catatan Input Seluruh Juri</h3>
+    <table class="ev-list"><tr><th>No</th><th>Ronde</th><th>Sisa waktu</th><th>Juri</th><th>Sudut</th><th>Teknik</th><th>Status</th></tr>${logRows || '<tr><td colspan="7">Belum ada input juri.</td></tr>'}</table>
+    ${all.length > 40 ? `<div style="font-size:9px">+ ${all.length - 40} input lainnya. Log lengkap tersedia pada unduhan CSV.</div>` : ''}
+    <table class="sign"><tr>
+      ${sgn('Ketua Pertandingan', S.info.ketua)}
+      ${sgn('Juri 1', jn[0])}
+      ${sgn('Juri 2', jn[1])}
+      ${sgn('Juri 3', jn[2])}
+    </tr></table>
+    <div class="foot">Dokumen dibuat otomatis oleh Sistem Penilaian Pertandingan Pencak Silat pada ${esc(new Date().toLocaleString('id-ID'))}</div>
+  </div>`;
+}
+function docHTML() { return docKind === 'juri' ? juriDocHTML() : reportHTML(); }
+function docName(ext) {
+  const base = ext === 'csv' ? 'Log-Juri' : (docKind === 'juri' ? 'Rekap-Juri' : 'Berita-Acara');
+  return `${base}_Partai-${safeName(S.info.partai) || 'X'}_${safeName(nameOf('red'))}-vs-${safeName(nameOf('blue'))}.${ext}`;
+}
+function juriCSV() {
+  const ev = jeval(S.settings), nm = { sah: 'Sah', tunggu: 'Menunggu', tidak: 'Tidak sah' };
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const head = ['Partai', 'Kelas', 'Ronde', 'Sisa waktu', 'Juri', 'Sudut', 'Atlet', 'Kontingen', 'Teknik', 'Poin', 'Status'];
+  const rows = allJuriInputs().sort((a, b) => a.ts - b.ts).map(e => [S.info.partai, S.info.kelas, e.round, e.t, 'Juri ' + e.j, CORNER[e.corner].label, nameOf(e.corner), clubOf(e.corner), TYPES[e.type].label, TYPES[e.type].pts, nm[ev.status[e.j + ':' + e.id]] || ''].map(q).join(';'));
+  return '﻿' + [head.map(q).join(';')].concat(rows).join('\r\n');
+}
+function downloadCSV() {
+  const blob = new Blob([juriCSV()], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = docName('csv');
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('Log juri (CSV) diunduh.');
+}
+
+/* ---- unggul per ronde (gabungan 3 juri) ---- */
+function renderRoundLead() {
+  const el = $('#roundLead'); if (!el) return;
+  const juri = S.settings.mode === 'juri';
+  const st = { red: stats('red'), blue: stats('blue') };
+  const pts = juri ? jeval(S.settings).points : [];
+  const has = i => S.events.some(e => e.round === i + 1) || pts.some(p => p.round === i + 1);
+  const chip = (r, b) => r > b ? `<span class="lead red">MERAH +${r - b}</span>` : b > r ? `<span class="lead blue">BIRU +${b - r}</span>` : `<span class="lead seri">SERI</span>`;
+  const col = (v, c) => `<span class="sc ${v === 0 ? 'n' : c}">${v}</span>`;
+  let wr = 0, wb = 0, ws = 0;
+  const rows = [0, 1, 2].map(i => {
+    const r = st.red.rounds[i].total, b = st.blue.rounds[i].total, d = has(i);
+    const ended = S.finished || i + 1 < S.round || S.remaining[i] === 0;
+    const here = i + 1 === S.round && !S.finished;
+    let label = 'belum mulai';
+    if (S.finished) label = d ? 'selesai' : 'tidak dimainkan';
+    else if (here) label = S.running ? 'berlangsung' : (S.remaining[i] === 0 ? 'waktu habis' : 'jeda');
+    else if (ended) label = d ? 'selesai' : 'tanpa skor';
+    if (d && ended) { if (r > b) wr++; else if (b > r) wb++; else ws++; }
+    return `<tr class="${here ? 'cur' : ''}"><td class="rd">Ronde ${i + 1}<small>${label}${d && !ended ? ' · sementara' : ''}</small></td><td>${col(r, 'r')}</td><td>${col(b, 'b')}</td><td>${d ? chip(r, b) : '<span class="lead none">–</span>'}</td></tr>`;
+  }).join('');
+  const tr = st.red.total, tb = st.blue.total, R = result();
+  let totChip = (tr || tb || S.events.length || pts.length) ? chip(tr, tb) : '<span class="lead none">–</span>';
+  let foot = `<div>Ronde dimenangkan: <b style="color:var(--red)">Merah ${wr}</b> · <b style="color:var(--blue)">Biru ${wb}</b>${ws ? ` · Seri ${ws}` : ''}</div>`;
+  if (S.finished && R.winner) foot += `<div>Hasil akhir: <b style="color:var(--${R.winner === 'red' ? 'red' : 'blue'})">${esc(nameOf(R.winner))}</b> · ${R.label}</div>`;
+  else if (R.tied) foot += '<div>Skor seri, menunggu keputusan Dewan Juri.</div>';
+  setHTML(el, `<div class="eyebrow">${juri ? 'Hasil Gabungan 3 Juri per Ronde' : 'Skor per Ronde'}</div>
+    <div class="muted text-xs" style="margin-top:-6px">${juri ? `Jumlah nilai Juri 1 + 2 + 3 dikurangi sanksi operator. Diperbarui langsung.` : 'Poin dari input operator dikurangi sanksi.'}</div>
+    <table class="rl"><thead><tr><th></th><th class="r">Merah<small>${esc(nameOf('red'))}</small></th><th class="b">Biru<small>${esc(nameOf('blue'))}</small></th><th>Unggul</th></tr></thead><tbody>${rows}
+      <tr class="tot"><td class="rd">Total<small>${S.finished ? 'akhir' : 'sementara'}</small></td><td>${col(tr, 'r')}</td><td>${col(tb, 'b')}</td><td>${totChip}</td></tr></tbody></table>
+    <div class="rlfoot">${foot}</div>`);
+}
+
+
+/* ---- rekap 3 ronde x 3 juri (operator) ---- */
+function renderRekap() {
+  const el = $('#rekap3'); if (!el) return;
+  const juri = S.settings.mode === 'juri';
+  const st = { red: stats('red'), blue: stats('blue') };
+  const jp = (n, c, r) => { const l = J[n].filter(e => e.corner === c && (!r || e.round === r)); return { pts: l.reduce((a, e) => a + TYPES[e.type].pts, 0), n: l.length }; };
+  const pick = (c, r, f) => r ? st[c].rounds[r - 1][f] : st[c].rounds.reduce((a, R) => a + R[f], 0);
+  const v = (x, cls, neg) => `<span class="v ${x === 0 ? 'z' : ''} ${neg && x < 0 ? 'neg' : ''}">${x}</span>`;
+  const row = r => {
+    const cur = r === S.round && !S.finished;
+    let h = `<tr class="${r === 0 ? 'tot' : cur ? 'cur' : ''}"><td class="rd">${r ? 'Ronde ' + r : 'TOTAL'}<small>${r ? (cur ? 'ronde aktif' : S.remaining[r - 1] === 0 ? 'selesai' : '') : (S.finished ? 'akhir' : 'sementara')}</small></td>`;
+    [1, 2, 3].forEach(n => ['red', 'blue'].forEach((c, i) => {
+      const x = jp(n, c, r);
+      h += `<td class="${c === 'red' ? 'r' : 'b'}${i === 0 ? ' split' : ''}">${v(x.pts)}<small class="n">${x.n} input</small></td>`;
+    }));
+    ['red', 'blue'].forEach((c, i) => { h += `<td class="${c === 'red' ? 'r' : 'b'}${i === 0 ? ' split' : ''}">${v(pick(c, r, 'atk'))}</td>`; });
+    ['red', 'blue'].forEach((c, i) => { const d = pick(c, r, 'ded'); h += `<td class="${c === 'red' ? 'r' : 'b'}${i === 0 ? ' split' : ''}">${d ? v(d, '', true) : v(0)}</td>`; });
+    ['red', 'blue'].forEach((c, i) => { h += `<td class="fin ${c === 'red' ? 'r' : 'b'}${i === 0 ? ' split' : ''}">${v(pick(c, r, 'total'))}</td>`; });
+    return h + '</tr>';
+  };
+  const sub = cls => `<th class="r${cls}">Merah</th><th class="b">Biru</th>`;
+  const head = `<thead>
+    <tr><th rowspan="2" style="text-align:left">Ronde</th>${[1, 2, 3].map(n => `<th class="g split" colspan="2">Juri ${n}<small style="display:block;font-weight:500;color:var(--muted)">nilai sendiri</small></th>`).join('')}
+      <th class="g split" colspan="2">${juri ? 'Poin sah (gabungan)' : 'Poin operator'}</th><th class="g split" colspan="2">Sanksi</th><th class="g split" colspan="2">Nilai akhir</th></tr>
+    <tr>${[1, 2, 3, 4, 5, 6].map(() => sub(' split')).join('')}</tr></thead>`;
+  setHTML($('#rekapTable'), `<table class="rk">${head}<tbody>${[1, 2, 3, 0].map(row).join('')}</tbody></table>`);
+  $('#rekapNote').textContent = juri
+    ? `Kolom Juri = nilai masing-masing juri sebelum validasi. Poin gabungan = jumlah ketiga juri. Nilai akhir = poin gabungan + sanksi operator. Diperbarui langsung.`
+    : 'Mode poin dari Operator: nilai juri hanya dipantau dan belum dijumlahkan. Ubah "Poin serangan dari" ke 3 Juri untuk menjumlahkannya.';
+  const R = result();
+  setHTML($('#rekapWin'), `<div style="font-size:14px"><span style="color:var(--red)">Merah <b class="disp" style="font-size:24px">${st.red.total}</b></span> <span class="muted">:</span> <span style="color:var(--blue)"><b class="disp" style="font-size:24px">${st.blue.total}</b> Biru</span></div>` +
+    (R.winner ? `<div class="muted text-xs" style="text-align:right">${S.finished ? 'Pemenang' : 'Unggul'}: ${esc(nameOf(R.winner))}</div>` : ''));
+}
+
+
+
+function storageOK() { try { const k = 'silat-test'; localStorage.setItem(k, '1'); const ok = localStorage.getItem(k) === '1'; localStorage.removeItem(k); return ok; } catch (e) { return false; } }
+const STORAGE_OK = storageOK();
+function juriInfoLine() {
+  if (!STORAGE_OK) return '<div class="muted text-xs" style="color:var(--red)">Penyimpanan peramban diblokir, input juri tidak bisa tersinkron. Buka file ini langsung di Chrome/Edge (bukan dari pratinjau atau iframe).</div>';
+  if (S.settings.mode !== 'juri') return '<div class="muted text-xs">Mode poin dari Operator: nilai juri belum dijumlahkan.</div>';
+  const ev = jeval(S.settings), all = allJuriInputs();
+  const sah = all.filter(e => ev.status[e.j + ':' + e.id] === 'sah').length, tung = all.filter(e => ev.status[e.j + ':' + e.id] === 'tunggu').length;
+  const per = [1, 2, 3].map(n => `J${n}: ${J[n].length}`).join(' · ');
+  return `<div class="muted text-xs">Input juri ${per} · sah ${sah} · menunggu ${tung} · belum sah ${all.length - sah - tung}${S.settings.jQuorum > 1 ? `. Sah bila ${S.settings.jQuorum} juri menekan teknik, sudut, dan ronde yang sama dalam ${S.settings.jWindow} detik.` : '.'}</div>`;
+}
+/* ---- ringkasan jumlah poin 3 ronde & 3 juri di papan skor ---- */
+function renderSum() {
+  const el = $('#sumCard'); if (!el) return;
+  const juri = S.settings.mode === 'juri';
+  const st = { red: stats('red'), blue: stats('blue') };
+  const tr = st.red.total, tb = st.blue.total, d = tr - tb;
+  const has = tr || tb || S.events.length || (juri && jeval(S.settings).points.length);
+  const cmp = (a, b, pre) => a > b ? `<div class="leadbar red">${pre}Sudut Merah Unggul (${a} - ${b})</div>`
+    : b > a ? `<div class="leadbar blue">${pre}Sudut Biru Unggul (${b} - ${a})</div>`
+    : `<div class="leadbar seri">${pre}Skor Seri (${a} - ${b})</div>`;
+  const ptsAll = juri ? jeval(S.settings).points : [];
+  const hasR = i => S.events.some(e => e.round === i + 1) || ptsAll.some(p => p.round === i + 1);
+  const rbars = [0, 1, 2].map(i => {
+    const a = st.red.rounds[i].total, b = st.blue.rounds[i].total;
+    const cur = S.round === i + 1 && !S.finished ? ' cur' : '';
+    if (!hasR(i)) return `<div class="leadbar none rb${cur}">Ronde ${i + 1}: belum ada poin</div>`;
+    return cmp(a, b, `Ronde ${i + 1}: `).replace('class="leadbar ', `class="leadbar rb${cur} `);
+  }).join('');
+  const RR = result();
+  const accum = !has ? '<div class="leadbar none">Akumulasi R1–R3: belum ada poin</div>' : cmp(tr, tb, 'Akumulasi R1–R3: ').replace('class="leadbar ', 'class="leadbar acc ');
+  const final = (S.finished && RR.winner) ? `<div class="leadbar acc ${RR.winner}" style="border-width:3px">PEMENANG AKHIR: ${esc(nameOf(RR.winner))} · ${RR.label}</div>` : '';
+  const bar = !has ? '<div class="leadbar none">Belum ada poin</div>'
+    : d > 0 ? `<div class="leadbar red">UNGGUL MERAH +${d}</div>`
+    : d < 0 ? `<div class="leadbar blue">UNGGUL BIRU +${-d}</div>`
+    : '<div class="leadbar seri">SKOR SERI</div>';
+  const jp = (n, c) => J[n].filter(e => e.corner === c).reduce((a, e) => a + TYPES[e.type].pts, 0);
+  const rd = (c, i) => st[c].rounds[i].total;
+  const ded = c => st[c].rounds.reduce((a, R) => a + R.ded, 0);
+  const atk = c => st[c].rounds.reduce((a, R) => a + R.atk, 0);
+  const row = (l, r, b, cls) => `<tr class="${cls || ''}"><td>${l}</td><td class="r">${r}</td><td class="b">${b}</td></tr>`;
+  const rounds = [0, 1, 2].map(i => row(`Ronde ${i + 1}`, rd('red', i), rd('blue', i), S.round === i + 1 && !S.finished ? 'cur' : '')).join('');
+  const judges = [1, 2, 3].map(n => row(`Juri ${n}`, jp(n, 'red'), jp(n, 'blue'))).join('');
+  setHTML(el, `<div class="eyebrow">Jumlah Poin Pertandingan · 3 Ronde${juri ? ' · 3 Juri' : ''}</div>
+    <div class="sumbig"><div><small style="color:var(--red)">MERAH</small><div class="n r">${tr}</div></div><div class="sep">:</div><div><small style="color:var(--blue)">BIRU</small><div class="n b">${tb}</div></div></div>
+    ${final}${accum}
+    <div class="rbars">${rbars}</div>
+    ${juriInfoLine()}
+    <table class="sumt"><thead><tr><th></th><th style="color:var(--red)">Merah</th><th style="color:var(--blue)">Biru</th></tr></thead><tbody>
+      <tr class="hd"><td colspan="3">Nilai per ronde</td></tr>${rounds}
+      <tr class="hd"><td colspan="3">Nilai masing-masing juri (3 ronde)</td></tr>${judges}
+      <tr class="hd"><td colspan="3">Perhitungan</td></tr>
+      ${row(juri ? 'Poin sah gabungan' : 'Poin operator', atk('red'), atk('blue'))}
+      ${row('Sanksi', ded('red') ? signed(ded('red')) : 0, ded('blue') ? signed(ded('blue')) : 0)}
+      ${row('TOTAL', tr, tb, 'tot')}
+    </tbody></table>`);
+}
+
+/* ---- navigasi monitor juri (operator) ---- */
+let view = 'op';
+function judgeStatus(n) {
+  const hb = +lsGet(KEYJHB(n));
+  const rl = !!(conns[n] && conns[n].open);
+  return { live: rl || (Number.isFinite(hb) && Date.now() - hb < 7000), cnt: J[n].length };
+}
+function renderNav() {
+  const out = [`<button class="navbtn ${view === 'op' ? 'on' : ''}" data-act="view" data-v="op"><span><b>Operator Utama</b><small>papan skor &amp; kendali</small></span></button>`];
+  [1, 2, 3].forEach(n => {
+    const st = judgeStatus(n);
+    const label = st.live ? 'aktif' : st.cnt ? 'data masuk' : 'belum terhubung';
+    out.push(`<span class="navgrp ${view === n ? 'on' : ''}"><button class="navbtn" data-act="view" data-v="${n}"><i class="dot ${st.live ? 'live' : st.cnt ? 'data' : ''}"></i><span><b>Juri ${n}</b><small>${st.cnt} input · ${label}</small></span></button><button class="navopen" data-act="openJ" data-n="${n}" title="Buka Juri ${n} di tab baru" aria-label="Buka Juri ${n} di tab baru">↗</button></span>`);
+  });
+  { const a = stats('red').total, b = stats('blue').total;
+    const any = a || b || S.events.length || (S.settings.mode === 'juri' && jeval(S.settings).points.length);
+    const cls = !any ? '' : a > b ? 'red' : b > a ? 'blue' : 'seri';
+    const txt = !any ? 'belum ada poin' : a > b ? 'Merah unggul' : b > a ? 'Biru unggul' : 'Seri';
+    out.push(`<span class="navtot ${cls}"><span style="color:var(--red)">M <b>${a}</b></span><span>:</span><span style="color:var(--blue)"><b>${b}</b> B</span><span>${txt}</span></span>`); }
+  setHTML($('#opNav'), out.join(''));
+}
+function renderMonitor() {
+  if (ROLE !== 'op' || view === 'op') return;
+  const n = view, ev = jeval(S.settings), st = judgeStatus(n);
+  const card = c => `<section class="jc jc-${c}">
+      <div class="jhd"><div style="min-width:0"><div class="eyebrow tag">${CORNER[c].label}</div><div class="cname">${esc(nameOf(c))}</div><div class="jclub"><span class="muted">Kontingen</span> <b>${esc(clubOf(c)) || '–'}</b></div></div><div class="jbigwrap"><div class="jbig">${ownPts(n, c)}</div><small>poin serangan Juri ${n}</small></div></div>
+      <div class="jstat">${statBlockHTML(c, n, S, ev, true, S.round)}</div></section>`;
+  const feed = J[n].slice(-10).reverse().map(e => {
+    const k = ev.status[n + ':' + e.id] || 'tidak';
+    return `<li><span class="t">R${e.round} · ${e.t}</span><span class="w ${e.corner}">${CORNER[e.corner].short}</span><span>${TYPES[e.type].label} <b>${signed(TYPES[e.type].pts)}</b></span><span class="chip2 ${k}">${stNames[k]}</span></li>`;
+  }).join('') || '<li><span class="muted" style="grid-column:1/-1">Juri ini belum memberi input.</span></li>';
+  const pc = st.live ? 'run' : st.cnt ? 'pause' : 'idle', pt = st.live ? 'AKTIF' : st.cnt ? 'DATA MASUK' : 'BELUM TERHUBUNG';
+  setHTML($('#monitor'), `
+    <div class="mon-head">
+      <div><div class="eyebrow">Pantauan langsung · tampilan juri</div><div class="jtitle">Juri ${n}</div></div>
+      <div class="mon-actions"><span class="pill ${pc}"><i></i>${pt}</span><button class="btn" data-act="openJ" data-n="${n}">Buka di tab baru</button><button class="btn btn-primary" data-act="view" data-v="op">Kembali ke Operator Utama</button></div>
+    </div>
+    <section class="card jinfo">
+      <div class="jmatch"><div class="jpartai">PARTAI <b>${esc(S.info.partai) || '–'}</b></div><div><div class="jev">${esc(S.info.event) || 'Pertandingan Pencak Silat'}</div><div class="muted text-sm">${esc(S.info.kelas) || '&nbsp;'} · Ronde ${S.round}</div></div></div>
+      <div class="jtime"><div class="timer" id="mTimer">--:--</div></div>
+    </section>
+    <div class="jgrid">${card('red')}${card('blue')}</div>
+    <section class="card jfeedbox"><div class="jfeedhead"><div class="eyebrow">Input Juri ${n} (10 terakhir)</div></div><ul class="log">${feed}</ul></section>`);
+  const mt = $('#mTimer'); if (mt) mt.textContent = fmt(S.remaining[S.round - 1]);
+}
+function refreshNav() { renderNav(); renderMonitor(); }
+function setView(v) {
+  view = v;
+  $('#opMain').hidden = v !== 'op'; $('#monitor').hidden = v === 'op';
+  refreshNav();
+  try { window.scrollTo({ top: 0 }); } catch (e) {}
+}
+
+/* ---- peran ---- */
+let ROLE = null;
+const parseRole = v => { v = String(v || '').toLowerCase().replace('#', ''); if (v === 'operator' || v === 'op') return 'op'; const m = v.match(/^juri([123])$/); return m ? +m[1] : null; };
+function applyRole() {
+  const r = ROLE;
+  $('#roleScreen').hidden = r !== null;
+  $('#app').hidden = r !== 'op';
+  $('#judgeApp').hidden = typeof r !== 'number';
+  if (r === 'op') startHost(); else if (typeof r === 'number') startJudge(); else stopNet();
+  document.title = (typeof r === 'number' ? `Juri ${r}` : r === 'op' ? 'Papan Skor' : 'Pilih Peran') + ' · Pencak Silat';
+  if (r === 'op') { lsSet(KEYHB, String(Date.now())); save(); loadJ(); fillPickers(); renderDA(); view = 'op'; $('#opMain').hidden = false; $('#monitor').hidden = true; renderAll(); }
+  else if (typeof r === 'number') { lsSet(KEYJHB(r), String(Date.now())); $('#judgeApp').innerHTML = ''; lastShell = ''; lastOpRound = null; renderJudge(); }
+}
+function setRole(r) {
+  if (typeof r === 'number') lsSet(KEYROOMJ, ($('#roomIn').value || '').trim().toUpperCase());
+  ROLE = r;
+  ssSet('silat-role', r === null ? '' : (r === 'op' ? 'operator' : 'juri' + r));
+  try { history.replaceState(null, '', r === null ? location.pathname + location.search : '#' + (r === 'op' ? 'operator' : 'juri' + r)); } catch (e) {}
+  applyRole();
+}
+let rq = 0; const pend = new Set();
+const later = fn => { pend.add(fn); if (rq) return; rq = requestAnimationFrame(() => { rq = 0; const l = [...pend]; pend.clear(); l.forEach(f => f()); }); };
+window.addEventListener('storage', ev => {
+  if (!ev.key) return;
+  if (ROLE === 'op') {
+    if (ev.key.startsWith('silat-juri-')) { loadJ(); later(renderAll); }
+    else if (ev.key === KEYA) { A = loadA(); later(() => { renderDA(); fillPickers(); }); }
+    else if (ev.key.startsWith('silat-jhb-')) later(refreshNav);
+  } else if (typeof ROLE === 'number' && (ev.key === KEY || ev.key.startsWith('silat-juri-'))) later(renderJudge);
+});
+window.addEventListener('hashchange', () => { const r = parseRole(location.hash); if (r && r !== ROLE) setRole(r); });
+let lastHb = 0, lastSig = '', lastKs = '';
+setInterval(() => {
+  const now = Date.now();
+  if (ROLE !== null) {
+    const sig = [1, 2, 3].map(n => lsGet(KEYJ(n)) || '').join('|');
+    if (sig !== lastSig) { lastSig = sig; loadJ(); if (ROLE === 'op') renderAll(); else renderJudge(); }
+    if (typeof ROLE === 'number') { const ks = lsGet(KEY) || ''; if (ks !== lastKs) { lastKs = ks; renderJudge(); } }
+  }
+  if (ROLE === 'op') { if (now - lastHb > 1500) { lastHb = now; lsSet(KEYHB, String(now)); } }
+  else if (typeof ROLE === 'number') { if (now - lastHb > 1500) { lastHb = now; lsSet(KEYJHB(ROLE), String(now)); } updateJudge(); }
+}, 250);
+
+$('#jWin').addEventListener('change', e => { S.settings.jWindow = Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 3)); save(); syncSettings(); renderAll(); });
+
+
+/* ================= sinkronisasi antar perangkat (WebRTC lewat PeerJS) ================= */
+const KEYROOM = 'silat-room-op', KEYROOMJ = 'silat-room-j', PFX = 'pncksilat-', ALPH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const PCFG = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }] } };
+let netDetail = '';
+const errMsg = e => { const t = e && e.type; return t === 'peer-unavailable' ? 'Ruang tidak ditemukan. Cek kode ruang, atau operator belum aktif.' : (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') ? 'Server PeerJS tidak terjangkau. Periksa internet atau ganti jaringan.' : t === 'webrtc' ? 'Koneksi langsung gagal (jaringan memblokir WebRTC).' : t === 'browser-incompatible' ? 'Browser tidak mendukung. Pakai Chrome.' : 'Error: ' + (t || 'tidak diketahui'); };
+let room = '', peer = null, conns = {}, jconn = null, REMOTE = null, netState = 'off', netTimer = null, bcT = 0;
+const remoteOn = () => typeof ROLE === 'number' && !!room;
+function newRoom() { let c = ''; for (let i = 0; i < 5; i++) c += ALPH[Math.floor(Math.random() * ALPH.length)]; return c; }
+function roomLink() { return location.protocol === 'file:' ? '' : location.origin + location.pathname + '?room=' + room; }
+function copyStr(v) {
+  if (!v) return toast('Tautan hanya tersedia jika file dibuka dari alamat web.');
+  const ok = () => toast('Disalin.');
+  try { navigator.clipboard.writeText(v).then(ok, () => toast('Salin manual: ' + v)); } catch (e) { toast('Salin manual: ' + v); }
+}
+function stopNet() {
+  clearTimeout(netTimer); const p = peer; peer = null; jconn = null; conns = {}; REMOTE = null; netState = 'off'; room = '';
+  if (p) try { p.destroy(); } catch (e) {}
+}
+function netSnapshot() {
+  const rem = S.remaining.slice(); if (S.running) rem[S.round - 1] = Math.max(0, endAt - Date.now());
+  return { info: S.info, red: S.red, blue: S.blue, settings: S.settings, round: S.round, remaining: rem, running: S.running, finished: S.finished, events: S.events, J };
+}
+function broadcast() {
+  if (ROLE !== 'op' || !peer) return;
+  const m = { t: 'state', s: netSnapshot() };
+  Object.values(conns).forEach(c => { if (c && c.open) try { c.send(m); } catch (e) {} });
+}
+function bcSoon() { if (ROLE !== 'op' || !peer) return; clearTimeout(bcT); bcT = setTimeout(broadcast, 60); }
+
+/* --- operator = pusat data --- */
+function startHost() {
+  stopNet();
+  room = lsGet(KEYROOM) || newRoom(); lsSet(KEYROOM, room);
+  if (!window.Peer) { netState = 'nolib'; return refreshNet(); }
+  const myRoom = room;
+  const open = () => {
+    if (ROLE !== 'op' || room !== myRoom) return;
+    const pr = new Peer(PFX + room, PCFG); peer = pr; netState = 'connecting'; netDetail = '';
+    pr.on('open', () => { netState = 'host'; refreshNet(); });
+    pr.on('connection', c => {
+      c.on('open', () => { try { c.send({ t: 'state', s: netSnapshot() }); } catch (e) {} });
+      c.on('data', m => onHostMsg(c, m));
+      c.on('close', () => { for (const k in conns) if (conns[k] === c) delete conns[k]; refreshNav(); refreshNet(); });
+    });
+    pr.on('disconnected', () => { try { pr.reconnect(); } catch (e) {} });
+    pr.on('error', e => {
+      if (e.type === 'unavailable-id') { netState = 'retry'; refreshNet(); try { pr.destroy(); } catch (x) {} netTimer = setTimeout(open, 3000); }
+      else if (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') { netState = 'err'; netDetail = e.type; refreshNet(); clearTimeout(netTimer); netTimer = setTimeout(() => { if (ROLE === 'op') startHost(); }, 5000); }
+      else if (e.type === 'webrtc') { /* abaikan error satu koneksi juri */ }
+      else { netState = 'err'; netDetail = e.type || ''; refreshNet(); }
+    });
+  };
+  open();
+}
+function onHostMsg(c, m) {
+  if (!m || typeof m !== 'object') return;
+  const n = +m.j; if (![1, 2, 3].includes(n)) return;
+  conns[n] = c;
+  if (m.t === 'hello') { try { c.send({ t: 'state', s: netSnapshot() }); } catch (e) {} refreshNav(); refreshNet(); return; }
+  if (m.t === 'hit') {
+    if (S.finished || !S.running) return;
+    if (!['red', 'blue'].includes(m.c) || !T3.includes(m.k)) return;
+    const id = J[n].reduce((x, e) => Math.max(x, e.id), 0) + 1;
+    J[n].push({ id, round: S.round, corner: m.c, type: m.k, ts: Date.now(), t: fmt(S.remaining[S.round - 1]) });
+    saveJ(n); renderAll(); broadcast();
+  } else if (m.t === 'undo') {
+    if (S.finished) return;
+    J[n].pop(); saveJ(n); renderAll(); broadcast();
+  }
+}
+function refreshNet() {
+  const el = $('#roomBox'); if (!el || ROLE !== 'op') return;
+  const st = { host: ['ok', 'Ruang aktif. Menunggu juri terhubung.'], connecting: ['mid', 'Menghubungkan ke server…'], retry: ['mid', 'Kode ruang masih terpakai sesi lama, mencoba lagi…'], err: ['bad', 'Gagal terhubung ke server' + (netDetail ? ' (' + netDetail + ')' : '') + '. Periksa internet. Mencoba lagi otomatis…'], nolib: ['bad', 'Library koneksi tidak termuat. Periksa internet lalu muat ulang halaman.'] }[netState] || ['mid', ''];
+  const link = roomLink();
+  setHTML(el, `<div class="eyebrow">Kode ruang · beri tahu ke Juri 1, 2, 3</div>
+    <div class="room-code">${esc(room)}</div>
+    <div class="netbar ${st[0]}">${st[1]}</div>
+    <div class="room-j">${[1, 2, 3].map(n => `<span class="${conns[n] && conns[n].open ? 'ok' : ''}">Juri ${n}: ${conns[n] && conns[n].open ? 'terhubung' : 'belum'}</span>`).join('')}</div>
+    <div class="grid grid-cols-3 gap-2"><button class="btn" data-act="roomcopy">Salin kode</button><button class="btn" data-act="linkcopy" ${link ? '' : 'disabled'}>Salin tautan</button><button class="btn btn-danger" data-act="roomnew">Kode baru</button></div>
+    <div class="muted text-xs">Tiap juri membuka file ini di perangkatnya sendiri, memilih Juri 1/2/3, dan mengisi kode ruang. Timer, nama atlet, kontingen, dan kelas otomatis mengikuti operator. Perangkat harus terhubung ke internet.</div>`);
+}
+
+/* --- juri = layar mengikuti operator --- */
+function startJudge() {
+  stopNet();
+  room = (lsGet(KEYROOMJ) || '').trim().toUpperCase();
+  if (!room) { netState = 'off'; return; }
+  if (!window.Peer) { netState = 'nolib'; return; }
+  const myRoom = room, pr = new Peer(PCFG); peer = pr; netDetail = '';
+  const connect = () => {
+    if (peer !== pr || room !== myRoom) return;
+    netState = 'connecting'; refreshJNet();
+    const c = pr.connect(PFX + room, { reliable: true }); jconn = c;
+    clearTimeout(netTimer);
+    const giveUp = setTimeout(() => { if (jconn === c && !c.open) { netDetail = 'Tidak bisa membuat koneksi langsung ke operator dalam 15 detik. Cek: operator "Ruang aktif", kode sama, dan satu jaringan/hotspot yang sama.'; try { c.close(); } catch (x) {} lost(); } }, 15000);
+    const lost = () => { clearTimeout(giveUp); if (jconn !== c) return; jconn = null; netState = 'lost'; refreshJNet(); clearTimeout(netTimer); netTimer = setTimeout(connect, 2500); };
+    c.on('open', () => { clearTimeout(giveUp); netDetail = ''; netState = 'on'; try { c.send({ t: 'hello', j: ROLE }); } catch (e) {} refreshJNet(); });
+    c.on('data', m => { if (m && m.t === 'state' && m.s) onState(m.s); });
+    c.on('close', lost); c.on('error', lost);
+  };
+  pr.on('open', connect);
+  pr.on('disconnected', () => { try { pr.reconnect(); } catch (e) {} });
+  pr.on('error', e => { if (peer !== pr) return; netDetail = errMsg(e); netState = 'lost'; refreshJNet(); clearTimeout(netTimer); netTimer = setTimeout(() => { if (pr.open) connect(); else { try { pr.reconnect(); } catch (x) {} } }, 3000); });
+}
+function onState(s) {
+  const now = Date.now();
+  REMOTE = { op: { info: s.info, red: s.red, blue: s.blue, settings: s.settings, round: s.round, remaining: s.remaining, running: s.running, finished: s.finished, events: s.events, endAt: now + (s.remaining[s.round - 1] || 0) }, recv: now };
+  [1, 2, 3].forEach(n => { J[n] = ((s.J && s.J[n]) || []).filter(validJE); });
+  renderJudge();
+}
+function refreshJNet() {
+  const el = $('#jNet'); if (!el) return;
+  const live = remoteOn() && REMOTE && Date.now() - REMOTE.recv < 5000;
+  let cls = 'mid', txt = 'Mode satu komputer (tanpa kode ruang)';
+  if (remoteOn()) {
+    if (netState === 'nolib') { cls = 'bad'; txt = 'Library koneksi tidak termuat. Periksa internet.'; }
+    else if (live) { cls = 'ok'; txt = 'Terhubung ke operator · ruang ' + room; }
+    else if (netState === 'lost') { cls = 'bad'; txt = (netDetail || 'Terputus dari operator') + ' Mencoba lagi…'; }
+    else { cls = 'mid'; txt = 'Menghubungkan ke ruang ' + room + '…' + (netDetail ? ' ' + netDetail : ''); }
+  }
+  if (el._t !== txt) { el.textContent = txt; el.className = 'netbar ' + cls; el._t = txt; }
+}
+setInterval(() => { if (ROLE === 'op') broadcast(); }, 1000);
+
+/* mulai */
+syncForm(); syncSettings();
+if (!hist.length && S.info.event) { hist = [S.info.event]; saveHist(); }
+renderHist();
+if (S.fresh) $('#setup').open = true;
+try { const rq0 = new URLSearchParams(location.search).get('room'); if (rq0) lsSet(KEYROOMJ, rq0.trim().toUpperCase()); } catch (e) {}
+$('#roomIn').value = lsGet(KEYROOMJ) || '';
+ROLE = parseRole(location.hash) || parseRole(ssGet('silat-role'));
+if (ROLE) ssSet('silat-role', ROLE === 'op' ? 'operator' : 'juri' + ROLE);
+applyRole();
+})();
+</script>
+</body>
+</html>
